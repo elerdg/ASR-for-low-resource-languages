@@ -11,10 +11,10 @@ Original file is located at
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%capture 
-# !pip install datasets==1.18.3 
-# !pip install transformers==4.11.3 
-# !pip install huggingface_hub==0.1 
-# !pip install torchaudio  
+# !pip install datasets==2.1 
+# !pip install transformers==4.18 
+# !pip install huggingface_hub==0.5.1 
+# !pip install torchaudio==0.11  
 # !pip install librosa 
 # !pip install jiwer   
 # ! git config --global credential.helper store 
@@ -36,22 +36,23 @@ from transformers import AutoModelForCTC, Wav2Vec2Processor
 from datasets.utils.version import Version
 from datasets import load_dataset, load_metric, Audio
 import os
+import numpy as np
 os.environ["WANDB_DISABLED"] = "true"
-common_voice_train = load_dataset("common_voice", "it", split="train[:4%]")
-common_voice_test = load_dataset("common_voice", "it", split="test[:2%]") ##NON SCARICARE OGNI VOLTA.
+common_voice_train = load_dataset("common_voice", "it", split="train[:5%]")
+common_voice_test = load_dataset("common_voice", "it", split="test") ##NON SCARICARE OGNI VOLTA.
+
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
 
 #pd.DataFrame(common_voice_train)
 print('creating dataframe')
-pd.DataFrame(common_voice_test)
+#pd.DataFrame(common_voice_test)
 
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 #"""take random samples"""
-#
 #def show_random_elements(dataset, num_examples=10):
 #    assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
 #    picks = []
@@ -63,14 +64,14 @@ common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_i
 #    
 #    df = pd.DataFrame(dataset[picks])
 #    display(HTML(df.to_html()))
-
 #show_random_elements(common_voice_train)
 #show_random_elements(common_voice_test)
+
 
 """## Preprocessing dataset"""
 print('preprocessing the dataset')
 
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…]'
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]]'
 
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
@@ -89,6 +90,9 @@ def replace_hatted_characters(batch):
     batch["sentence"] = re.sub('[ù]', 'u', batch["sentence"])
     batch["sentence"] = re.sub('[é]', 'e', batch["sentence"])
     batch["sentence"] = re.sub('[ó]', 'o', batch["sentence"])
+    batch["sentence"] = re.sub('[ú]', 'u', batch["sentence"])
+    batch["sentence"] = re.sub('[í]', 'i', batch["sentence"])
+    
     return batch
 
 common_voice_train = common_voice_train.map(replace_hatted_characters)
@@ -102,14 +106,12 @@ def extract_all_chars(batch):
 vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_train.column_names)
 vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 
-#vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
-vocab_list = list( set(vocab_test["vocab"][0]))
+vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
 
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 print(vocab_dict)
 
 """for character not present in the test"""
-
 vocab_dict["|"] = vocab_dict[" "]
 del vocab_dict[" "]
 
@@ -146,15 +148,12 @@ common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=1
 #import numpy as np
 #import random
 
-
 print("## Prepare Dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]
-
     # batched output is "un-batched"
     batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
     batch["input_length"] = len(batch["input_values"])
-    
     with processor.as_target_processor():
         batch["labels"] = processor(batch["sentence"]).input_ids
     return batch
@@ -218,19 +217,20 @@ data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 """## Cer Metric"""
 
 cer_metric = load_metric("cer")
+#wer_metric = load_metric("wer")
 
 def compute_metrics(pred):
     pred_logits = pred.predictions
     pred_ids = np.argmax(pred_logits, axis=-1)
-
     pred.label_ids[pred.label_ids == -100] = processor.tokenizer.pad_token_id
-
     pred_str = processor.batch_decode(pred_ids)
     # we do not want to group tokens when computing the metrics
     label_str = processor.batch_decode(pred.label_ids, group_tokens=False)
 
     cer = cer_metric.compute(predictions=pred_str, references=label_str)
-
+    #wer = wer_metric.compute(predictions=pred_str, references=label_str)
+    #print("wer", wer)
+    
     return {"cer": cer}
 
 """# load the pretrained checkpoint of Wav2Vec2-XLS-R-300M"""
@@ -257,9 +257,10 @@ training_args = TrainingArguments(
   output_dir="wav2vec2-large-xls-r-300m-italian-colab",
   group_by_length=True,
   per_device_train_batch_size=4,
+  per_device_eval_batch_size=4,
   gradient_accumulation_steps=2,
   evaluation_strategy="steps",
-  num_train_epochs=1,
+  num_train_epochs=50,
   gradient_checkpointing=True,
   fp16=True,
   save_steps=400,
@@ -268,9 +269,8 @@ training_args = TrainingArguments(
   learning_rate=3e-4,
   warmup_steps=500,
   save_total_limit=2,
-#  #push_to_hub=True,
 )
-#
+
 from transformers import Trainer
 
 trainer = Trainer(
@@ -283,8 +283,13 @@ trainer = Trainer(
     tokenizer=processor.feature_extractor,
 )
 
+import sys
+#sys.exit()
+
 #"""# Training """
+print("TRAINING")
 trainer.train()
+print("ENDED TRAINING")
 #from transformers import AutoModelForCTC, Wav2Vec2Processor
 #print('Initiating model')
 #model = AutoModelForCTC.from_pretrained("/wav2vec2-large-xls-r-300m-it-colab")
@@ -301,11 +306,14 @@ input_dict = processor(common_voice_test[0]["input_values"], return_tensors="pt"
 logits = model(input_dict.input_values.cuda()).logits
 
 pred_ids = torch.argmax(logits, dim=-1)[0]
-print(pred_ids)
-#common_voice_test_transcription = load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:2%]")
+print("PRED-IDS", pred_ids)
+print("Prediction:")
+print(processor.decode(pred_ids))
 
-#print("Prediction:")
-#print(processor.decode(pred_ids))
+common_voice_test_transcription = load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:2%]")
 
-#print("\nReference:")
-#print(common_voice_test_transcription[0]["sentence"].lower())
+print("Prediction:")
+print(processor.decode(pred_ids))
+
+print("\nReference:")
+print(common_voice_test_transcription[0]["sentence"].lower())
