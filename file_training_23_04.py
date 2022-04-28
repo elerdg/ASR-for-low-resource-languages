@@ -274,7 +274,7 @@ training_args = TrainingArguments(
   per_device_eval_batch_size=4,
   gradient_accumulation_steps=2,
   evaluation_strategy="epoch",
-  num_train_epochs=10,
+  num_train_epochs=15,
   gradient_checkpointing=True,
   fp16=True,
   #save_steps=400,
@@ -304,6 +304,10 @@ print("TRAINING")
 trainer.train()
 print("ENDED TRAINING")
 
+## Save the model and processor
+print("saving model and processor")
+torch.save(model, "/data/disk1/data/erodegher/wav2vec2-xls-r-ita")
+torch.save(processor, "/data/disk1/data/erodegher/processor_wav2vec-it")
 
 #from transformers import AutoModelForCTC, Wav2Vec2Processor
 #print('Initiating model')
