@@ -17,13 +17,16 @@ import os
 import numpy as np
 import sys
 
-## import model 
-#saved_model = torch.load("data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
-saved_model = AutoModelForCTC.from_pretrained("data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
+print("loading saved model")
+## import model
+saved_model= torch.load("/data/disk1/data/erodegher/wav2vec2-xls-r-ita")  #saved epoch 15
+#saved_model = torch.load("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
+#saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
 saved_model.to("cuda")
 
-## import processor (tokenizer)  
-processor = Wav2Vec2Processor.from_pretrained("data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
+## import processor (tokenizer)
+processor= torch.load("/data/disk1/data/erodegher/processor_wav2vec-it")
+#processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
 
 ## import test set 
 common_voice_test= load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:10%]")
@@ -34,7 +37,7 @@ wer = load_metric("wer")
 cer = load_metric("cer")
 
 # Preprocessing the datasets.
-print("## Preprocessing Dataset")
+print("Preprocessing Dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]
     # batched output is "un-batched"
