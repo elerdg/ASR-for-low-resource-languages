@@ -37,21 +37,24 @@ from datasets.utils.version import Version
 from datasets import load_dataset, load_metric, Audio
 import os
 import numpy as np
+import sys
+
 os.environ["WANDB_DISABLED"] = "true"
+
 common_voice_train = load_dataset("common_voice", "it", split="train[:5%]")
 common_voice_test = load_dataset("common_voice", "it", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
-common_voice_eval = load_dataset("common_voice", "it", split="validation[:10%]")
+common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
 
-#pd.DataFrame(common_voice_train)
 print('creating dataframe')
+pd.DataFrame(common_voice_train)
 #pd.DataFrame(common_voice_test)
 
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-common_voice_eval = common_voice_eval.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_validation = common_voice_eval.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 #"""take random samples"""
 #def show_random_elements(dataset, num_examples=10):
@@ -80,7 +83,7 @@ def remove_special_characters(batch):
 
 common_voice_train = common_voice_train.map(remove_special_characters)
 common_voice_test = common_voice_test.map(remove_special_characters)
-common_voice_eval=common_voice_eval.map(remove_special_characters)
+common_voice_validation=common_voice_validation.map(remove_special_characters)
 
 #show_random_elements(common_voice_train.remove_columns(["path","audio"]))
 #show_random_elements(common_voice_test.remove_columns(["path","audio"]))
@@ -99,7 +102,7 @@ def replace_hatted_characters(batch):
 
 common_voice_train = common_voice_train.map(replace_hatted_characters)
 common_voice_test = common_voice_test.map(replace_hatted_characters)
-common_voice_eval= common_voice_eval.map(replace_hatted_characters)
+common_voice_validation= common_voice_validation.map(replace_hatted_characters)
 
 def extract_all_chars(batch):
   all_text = " ".join(batch["sentence"])
@@ -110,7 +113,6 @@ vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size
 vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 
 vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
-
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 print(vocab_dict)
 
@@ -126,6 +128,7 @@ len(vocab_dict)
 import json
 with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
+ 
 
 print("## Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
@@ -145,7 +148,7 @@ print("## Check and resampling")
 #common_voice_test[0]['audio']   #sr = 48000
 common_voice_train = common_voice_train.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
-common_voice_eval = common_voice_eval.cast_column("audio", Audio(sampling_rate=16_000))
+common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
 
 #common_voice_test[0]['audio'] #sr = 16000
 #import IPython.display as ipd
@@ -165,7 +168,9 @@ def prepare_dataset(batch):
 
 common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names)
 common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names)
-common_voice_eval = common_voice_eval.map(prepare_dataset, remove_columns=common_voice_test.column_names)
+common_voice_validation = common_voice_validation.map(prepare_dataset, remove_columns=common_voice_validation.column_names)
+
+
 """## Data Collator """
 import torch
 from dataclasses import dataclass, field
@@ -219,8 +224,9 @@ class DataCollatorCTCWithPadding:
 
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 
-"""## Cer Metric"""
 
+
+"""## Cer Metric"""
 cer_metric = load_metric("cer")
 wer_metric = load_metric("wer")
 
@@ -267,13 +273,13 @@ training_args = TrainingArguments(
   per_device_train_batch_size=4,
   per_device_eval_batch_size=4,
   gradient_accumulation_steps=2,
-  evaluation_strategy="steps",
+  evaluation_strategy="epoch",
   num_train_epochs=10,
   gradient_checkpointing=True,
   fp16=True,
-  save_steps=400,
-  eval_steps=400,
-  logging_steps=400,
+  #save_steps=400,
+  #eval_steps=400,
+  #logging_steps=400,
   learning_rate=3e-4,
   warmup_steps=500,
   save_total_limit=2,
@@ -287,17 +293,18 @@ trainer = Trainer(
     args=training_args,
     compute_metrics=compute_metrics,
     train_dataset=common_voice_train, 
-    eval_dataset=common_voice_eval,
+    eval_dataset=common_voice_validation,
     tokenizer=processor.feature_extractor,
+    #callbacks=[EarlyStoppingCallback()]
 )
 
-import sys
-#sys.exit()
 
 #"""# Training """
 print("TRAINING")
 trainer.train()
 print("ENDED TRAINING")
+
+
 #from transformers import AutoModelForCTC, Wav2Vec2Processor
 #print('Initiating model')
 #model = AutoModelForCTC.from_pretrained("/wav2vec2-large-xls-r-300m-it-colab")
@@ -314,11 +321,11 @@ input_dict = processor(common_voice_test[0]["input_values"], return_tensors="pt"
 logits = model(input_dict.input_values.cuda()).logits
 
 pred_ids = torch.argmax(logits, dim=-1)[0]
-print("PRED-IDS", pred_ids)
+print("PRED_IDS", pred_ids)
 print("Prediction:")
 print(processor.decode(pred_ids))
 
-common_voice_test_transcription = load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:2%]")
+common_voice_test_transcription = load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:10%]")
 
 print("Prediction:")
 print(processor.decode(pred_ids))
