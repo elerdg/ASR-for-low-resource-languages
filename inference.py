@@ -17,14 +17,13 @@ import os
 import numpy as np
 import sys
 
+## import the model and processor
 print("loading saved model")
-## import model
 saved_model= torch.load("/data/disk1/data/erodegher/wav2vec2-xls-r-ita")  #saved epoch 15
-#saved_model = torch.load("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
 #saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
 saved_model.to("cuda")
 
-## import processor (tokenizer)
+print("loading processor")
 processor= torch.load("/data/disk1/data/erodegher/processor_wav2vec-it")
 #processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
 
@@ -40,7 +39,6 @@ cer = load_metric("cer")
 print("Preprocessing Dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]
-    # batched output is "un-batched"
     batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
     batch["input_length"] = len(batch["input_values"])
 
