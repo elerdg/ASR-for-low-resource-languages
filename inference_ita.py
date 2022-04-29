@@ -4,6 +4,7 @@ from datasets import ClassLabel
 import random
 import re
 import torch
+import librosa
 import json
 from IPython.display import display, HTML
 from transformers import Wav2Vec2ForCTC
@@ -60,7 +61,6 @@ for i, predicted_sentence in enumerate(predicted_sentences):
     print("-" * 100)
     print("Reference:", common_voice_test[i]["sentence"])
     print("Prediction:", predicted_sentence)
-
 
 print("WER: {:2f}".format(100 * wer.compute(predicted_sentence=result["pred_strings"], references=result["sentence"])))
 print("CER: {:2f}".format(100 * cer.compute(predicted_sentence=result["pred_strings"], references=result["sentence"])))
