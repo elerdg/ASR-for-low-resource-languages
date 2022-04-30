@@ -45,7 +45,5 @@ for i, predicted_sentence in enumerate(predicted_sentences):
     print("Prediction:", predicted_sentence)
 
 
-#print("WER: {:2f}".format(100 * wer.compute(predicted_sentence=result["pred_strings"], references=resu\
-lt["sentence"])))
-#print("CER: {:2f}".format(100 * cer.compute(predicted_sentence=result["pred_strings"], references=resu\
-lt["sentence"])))
+#print("WER: {:2f}".format(100 * wer.compute(predicted_sentence=result["pred_strings"], references=result["sentence"])))
+#print("CER: {:2f}".format(100 * cer.compute(predicted_sentence=result["pred_strings"], references=result["sentence"])))
