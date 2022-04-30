@@ -306,6 +306,8 @@ print("ENDED TRAINING")
 
 ## Save the model and processor
 print("saving model and processor")
+trainer.push_to_hub("/data/disk1/data/erodegher/WAV2VEC2-ita")
+
 torch.save(model, "/data/disk1/data/erodegher/wav2vec2-xls-r-ita")
 torch.save(processor, "/data/disk1/data/erodegher/processor_wav2vec-it")
 
