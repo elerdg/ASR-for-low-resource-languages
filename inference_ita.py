@@ -18,15 +18,19 @@ import os
 import numpy as np
 import sys
 
-## import the model and processor
+#"""import the model, processor, tokenizer"""
+
 print("loading saved model")
-saved_model= torch.load("/data/disk1/data/erodegher/wav2vec2-xls-r-ita")  #saved epoch 15
-#saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
+#saved_model= torch.load("/data/disk1/data/erodegher/model-wav2vec2-ita")  #saved epoch 50
+saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab/checkpoint-36000/")
 saved_model.to("cuda")
 
+print("loading tokenizer")
+tokenizer =  Wav2Vec2Tokenizer.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab/checkpoint-36000/")
+
 print("loading processor")
-processor= torch.load("/data/disk1/data/erodegher/processor_wav2vec-it")
-#processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab")
+#processor= torch.load("/data/disk1/data/erodegher/processor_wav2vec-it")
+processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab/checkpoint-36000/")
 
 ## import test set 
 common_voice_test= load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:10%]")
