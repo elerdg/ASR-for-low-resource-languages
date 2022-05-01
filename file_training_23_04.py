@@ -49,7 +49,14 @@ common_voice_validation = load_dataset("common_voice", "it", split="validation[:
 
 print('creating dataframe')
 pd.DataFrame(common_voice_train)
-#pd.DataFrame(common_voice_test)
+pd.DataFrame(common_voice_test)
+pd.DataFrame(common_voice_validation)
+
+len_train = len(pd.DataFrame(common_voice_train)["audio"])
+len_test = len(pd.DataFrame(common_voice_test)["audio"])
+len_validation= len(pd.DataFrame(common_voice_validation)["audio"])
+
+print(f" FILE AUDIO PER DATAFRAME train: {len_train},    test: {len_test},   validation: {len_validation}")
 
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
@@ -72,7 +79,7 @@ common_voice_validation = common_voice_eval.remove_columns(["accent", "age", "cl
 #show_random_elements(common_voice_test)
 
 
-"""## Preprocessing dataset"""
+"""Preprocessing dataset"""
 print('preprocessing the dataset')
 
 chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]]'
@@ -130,7 +137,7 @@ with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
  
 
-print("## Tokenizer")
+print("Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
 repo_name = "wav2vec2-large-xls-r-300m-italian-colab"
