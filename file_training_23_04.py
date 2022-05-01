@@ -134,7 +134,8 @@ print("## Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
 repo_name = "wav2vec2-large-xls-r-300m-italian-colab"
-#tokenizer.push_to_hub(repo_name)
+print("saving tokenizer")
+tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-italian-colab")
 
 """## FeatureExtractor"""
 from transformers import Wav2Vec2FeatureExtractor
