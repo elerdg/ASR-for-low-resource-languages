@@ -8,10 +8,9 @@ import librosa
 import json
 from IPython.display import display, HTML
 from transformers import Wav2Vec2ForCTC
-from transformers import Wav2Vec2CTCTokenizer
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
-from transformers import AutoModelForCTC, Wav2Vec2Processor
+from transformers import AutoModelForCTC, Wav2Vec2Processor, Wav2Vec2CTCTokenizer
 from datasets.utils.version import Version
 from datasets import load_dataset, load_metric, Audio
 import os
@@ -26,7 +25,7 @@ saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2ve
 saved_model.to("cuda")
 
 print("loading tokenizer")
-tokenizer =  Wav2Vec2Tokenizer.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab/checkpoint-36000/", local_files_only = True)
+tokenizer =  Wav2Vec2CTCTokenizer.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab/checkpoint-36000/", local_files_only = True)
 
 print("loading processor")
 #processor= torch.load("/data/disk1/data/erodegher/processor_wav2vec-it")
