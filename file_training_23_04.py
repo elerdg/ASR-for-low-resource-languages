@@ -291,9 +291,12 @@ training_args = TrainingArguments(
   learning_rate=3e-4,
   warmup_steps=500,
   save_total_limit=2,
+  save_strategy= "epoch",
+  metric_for_best_model="eval_loss",
+  load_best_model_at_end = True,
 )
 
-from transformers import Trainer
+from transformers import Trainer, EarlyStoppingCallback
 
 trainer = Trainer(
     model=model,
@@ -303,13 +306,14 @@ trainer = Trainer(
     train_dataset=common_voice_train, 
     eval_dataset=common_voice_validation,
     tokenizer=processor.feature_extractor,
-    #callbacks=[EarlyStoppingCallback()]
+    callbacks=[EarlyStoppingCallback()]
 )
 
 
 #"""# Training """
 print("TRAINING")
 trainer.train()
+#trainer.train(resume_from_checkpoint = True)
 print("ENDED TRAINING")
 
 ## Save the model and processor
