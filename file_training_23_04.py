@@ -38,8 +38,13 @@ from datasets import load_dataset, load_metric, Audio
 import os
 import numpy as np
 import sys
+import argparse
 
 os.environ["WANDB_DISABLED"] = "true"
+
+#parser = argparse.ArgumentParser()
+#parser.add_argument("epoch", "output_dir", type=int, str)
+#args = parser.parse_args()
 
 common_voice_train = load_dataset("common_voice", "it", split="train[:5%]")
 common_voice_test = load_dataset("common_voice", "it", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
@@ -165,10 +170,11 @@ common_voice_validation = common_voice_validation.cast_column("audio", Audio(sam
 
 
 print("## Prepare Dataset")
+"""#take only first 5 seconds = 89000 number of samplings"""
 def prepare_dataset(batch):
     audio = batch["audio"]
     # batched output is "un-batched"
-    batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
+    batch["input_values"] = processor(audio["array"][:89000], sampling_rate=audio["sampling_rate"]).input_values[0]
     batch["input_length"] = len(batch["input_values"])
     with processor.as_target_processor():
         batch["labels"] = processor(batch["sentence"]).input_ids
