@@ -170,11 +170,10 @@ common_voice_validation = common_voice_validation.cast_column("audio", Audio(sam
 
 
 print("## Prepare Dataset")
-"""#take only first 5 seconds = 89000 number of samplings"""
 def prepare_dataset(batch):
     audio = batch["audio"]
     # batched output is "un-batched"
-    batch["input_values"] = processor(audio["array"][:89000], sampling_rate=audio["sampling_rate"]).input_values[0]
+    batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
     batch["input_length"] = len(batch["input_values"])
     with processor.as_target_processor():
         batch["labels"] = processor(batch["sentence"]).input_ids
@@ -183,7 +182,10 @@ def prepare_dataset(batch):
 common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names)
 common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names)
 common_voice_validation = common_voice_validation.map(prepare_dataset, remove_columns=common_voice_validation.column_names)
-
+"""#take only first 5 seconds = 89000 number of samplings"""
+common_voice_train = common_voice_train.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
+common_voice_test = common_voice_test.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
+common_voice_validation = common_voice_validation.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 
 """## Data Collator """
 import torch
@@ -312,7 +314,7 @@ trainer = Trainer(
     train_dataset=common_voice_train, 
     eval_dataset=common_voice_validation,
     tokenizer=processor.feature_extractor,
-    callbacks=[EarlyStoppingCallback()]
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
 )
 
 
@@ -322,16 +324,9 @@ trainer.train()
 #trainer.train(resume_from_checkpoint = True)
 print("ENDED TRAINING")
 
-## Save the model and processor
-#print("saving model and processor")
+"""#MODEL and TOKENIZER have been saved in the output_dir directory"""
+print("model and tokenizer have been saved in the output_dir directory")
 #trainer.push_to_hub("wav2vec2-large-xls-r-300m-italian-colab")
-#torch.save(model, "/data/disk1/data/erodegher/model-wav2vec2-xls-r-ita")
-
-#from transformers import AutoModelForCTC, Wav2Vec2Processor
-#print('Initiating model')
-#model = AutoModelForCTC.from_pretrained("/wav2vec2-large-xls-r-300m-it-colab")
-#print('Initiating processor')
-#processor = Wav2Vec2Processor.from_pretrained("/wav2vec2-large-xls-r-300m-it-colab")
 
 """# Evaluation"""
 print('evaluation')
@@ -339,18 +334,13 @@ print('evaluation')
 #processor = Wav2Vec2Processor.from_pretrained(repo_name)
 
 input_dict = processor(common_voice_test[0]["input_values"], return_tensors="pt", padding=True)
-
 logits = model(input_dict.input_values.cuda()).logits
-
 pred_ids = torch.argmax(logits, dim=-1)[0]
 print("PRED_IDS", pred_ids)
 print("Prediction:")
 print(processor.decode(pred_ids))
 
 common_voice_test_transcription = load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:10%]")
-
-print("Prediction:")
-print(processor.decode(pred_ids))
 
 print("\nReference:")
 print(common_voice_test_transcription[0]["sentence"].lower())
