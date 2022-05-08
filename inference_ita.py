@@ -84,4 +84,6 @@ for el in common_voice_test["input_values"]:
             "CER score":[result_cer],
             "WER_score":[result_cer],
            }
-        pd.DataFrame(data=d)
+        df = pd.DataFrame(data=d)
+        df.to_csv("/data/disk1/data/erodegher/inference.csv", sep="\t")
+        
