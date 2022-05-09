@@ -67,8 +67,8 @@ common_voice_train_2 = load_dataset("common_voice", "it", split="train[25:50%]")
 common_voice_train_2 = common_voice_train_2.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_train_2=[ el for el in common_voice_train_2 if len(el["audio"]["array"]) < 5.0*16000]
 
-common_voice_train= common_voice_train_1.extend(common_voice_train_2)
-    
+common_voice_train_1.extend(common_voice_train_2)
+common_voice_train=common_voice_train_1    
 print(len(common_voice_train))
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
@@ -86,7 +86,7 @@ print(f" FILE AUDIO PER DATAFRAME train: {len_train},    test: {len_test},   val
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-common_voice_validation = common_voice_eval.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 """Preprocessing dataset"""
 print('preprocessing the dataset')
