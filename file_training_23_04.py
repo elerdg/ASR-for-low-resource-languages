@@ -66,23 +66,7 @@ print(f" FILE AUDIO PER DATAFRAME train: {len_train},    test: {len_test},   val
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-common_voice_validation = common_voice_eval.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-#"""take random samples"""
-#def show_random_elements(dataset, num_examples=10):
-#    assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
-#    picks = []
-#    for _ in range(num_examples):
-#        pick = random.randint(0, len(dataset)-1)
-#        while pick in picks:
-#            pick = random.randint(0, len(dataset)-1)
-#        picks.append(pick)
-#    
-#    df = pd.DataFrame(dataset[picks])
-#    display(HTML(df.to_html()))
-#show_random_elements(common_voice_train)
-#show_random_elements(common_voice_test)
-
+common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 """Preprocessing dataset"""
 print('preprocessing the dataset')
@@ -142,6 +126,7 @@ with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
  
 
+"""## Tokenizer"""
 print("Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
@@ -164,10 +149,6 @@ common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=1
 common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
 
 #common_voice_test[0]['audio'] #sr = 16000
-#import IPython.display as ipd
-#import numpy as np
-#import random
-
 
 print("## Prepare Dataset")
 def prepare_dataset(batch):
@@ -239,7 +220,6 @@ class DataCollatorCTCWithPadding:
         return batch
 
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
-
 
 
 """## Cer Metric"""
