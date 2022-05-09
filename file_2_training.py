@@ -62,21 +62,14 @@ print("## Take audio shorter than 5 seconds long")
 common_voice_train_1=[ el for el in common_voice_train_1 if len(el["audio"]["array"]) < 5.0*16000]
 common_voice_test=[ el for el in common_voice_test if len(el["audio"]["array"]) < 5.0*16000]
 common_voice_validation=[ el for el in common_voice_validation if len(el["audio"]["array"]) < 5.0*16000]
-
-common_voice_train= []
-for el in common_voice_train_1:
-    common_voice_train.append(common_voice_train_1)
     
 common_voice_train_2 = load_dataset("common_voice", "it", split="train[25:50%]")
 common_voice_train_2 = common_voice_train_2.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_train_2=[ el for el in common_voice_train_2 if len(el["audio"]["array"]) < 5.0*16000]
 
-for el in common_voice_train_2:
-    common_voice_train.append(common_voice_train_2)
+common_voice_train= common_voice_train_1.extend(common_voice_train_2)
     
 print(len(common_voice_train))
-
-sys.exit()
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
 print('creating dataframe')
