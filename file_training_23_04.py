@@ -71,7 +71,7 @@ common_voice_validation = common_voice_validation.remove_columns(["accent", "age
 """Preprocessing dataset"""
 print('preprocessing the dataset')
 
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]]'
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\\\/\«\»]'
 
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
