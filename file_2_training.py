@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 from transformers import AutoModelForCTC, Wav2Vec2Processor
 from datasets.utils.version import Version
-from datasets import load_dataset, load_metric, Audio
+from datasets import load_dataset, load_metric, Audio, Dataset
 import os
 import numpy as np
 import sys
@@ -73,15 +73,19 @@ print(len(common_voice_train))
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
 print('creating dataframe')
-pd.DataFrame(common_voice_train)
-pd.DataFrame(common_voice_test)
-pd.DataFrame(common_voice_validation)
+df_train = pd.DataFrame(common_voice_train)
+df_test = pd.DataFrame(common_voice_test)
+df_validation = pd.DataFrame(common_voice_validation)
 
-len_train = len(pd.DataFrame(common_voice_train)["audio"])
-len_test = len(pd.DataFrame(common_voice_test)["audio"])
-len_validation= len(pd.DataFrame(common_voice_validation)["audio"])
+len_train = len(df_train)["audio"])
+len_test = len(df_test)["audio"])
+len_validation= len(df_validation)["audio"])
 
 print(f" FILE AUDIO PER DATAFRAME train: {len_train},    test: {len_test},   validation: {len_validation}")
+
+common_voice_train= Dataset.from_pandas(df_train)
+common_voice_test= Dataset.from_pandas(df_test)
+common_voice_validation= Dataset.from_pandas(df_validation)
 
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
