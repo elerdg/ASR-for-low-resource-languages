@@ -77,9 +77,9 @@ df_train = pd.DataFrame(common_voice_train)
 df_test = pd.DataFrame(common_voice_test)
 df_validation = pd.DataFrame(common_voice_validation)
 
-len_train = len(df_train)["audio"])
-len_test = len(df_test)["audio"])
-len_validation= len(df_validation)["audio"])
+len_train = len(df_train["audio"])
+len_test = len(df_test["audio"])
+len_validation= len(df_validation["audio"])
 
 print(f" FILE AUDIO PER DATAFRAME train: {len_train},    test: {len_test},   validation: {len_validation}")
 
