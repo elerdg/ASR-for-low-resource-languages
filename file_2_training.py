@@ -40,7 +40,7 @@ import numpy as np
 import sys
 import argparse
 from torch import Tensor
-from torch.utils.data import Dataset
+#from torch.utils.data import Dataset
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -83,6 +83,7 @@ len_validation= len(df_validation["audio"])
 
 print(f" FILE AUDIO PER DATAFRAME train: {len_train},    test: {len_test},   validation: {len_validation}")
 
+#"""from DataFrame to Dataset.array"""
 common_voice_train= Dataset.from_pandas(df_train)
 common_voice_test= Dataset.from_pandas(df_test)
 common_voice_validation= Dataset.from_pandas(df_validation)
@@ -95,7 +96,7 @@ common_voice_validation = common_voice_validation.remove_columns(["accent", "age
 """Preprocessing dataset"""
 print('preprocessing the dataset')
 
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]]'
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/]'
 
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
@@ -117,9 +118,9 @@ def replace_hatted_characters(batch):
     
     return batch
 
-common_voice_train = common_voice_train.map(replace_hatted_characters)
-common_voice_test = common_voice_test.map(replace_hatted_characters)
-common_voice_validation= common_voice_validation.map(replace_hatted_characters)
+#common_voice_train = common_voice_train.map(replace_hatted_characters)
+#common_voice_test = common_voice_test.map(replace_hatted_characters)
+#common_voice_validation= common_voice_validation.map(replace_hatted_characters)
 
 def extract_all_chars(batch):
   all_text = " ".join(batch["sentence"])
@@ -161,13 +162,6 @@ feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000
 """## Processor = feature extractor + tokenizer"""
 from transformers import Wav2Vec2Processor, Wav2Vec2CTCTokenizer
 processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
-
-#print("## Resampling")
-#common_voice_test[0]['audio']   #sr = 48000
-#common_voice_train = common_voice_train.cast_column("audio", Audio(sampling_rate=16_000))
-#common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
-#common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
-
 
 print("## Prepare Dataset")
 def prepare_dataset(batch):
@@ -291,7 +285,7 @@ training_args = TrainingArguments(
   per_device_eval_batch_size=4,
   gradient_accumulation_steps=2,
   evaluation_strategy="epoch",
-  num_train_epochs=15,
+  num_train_epochs=80,
   gradient_checkpointing=True,
   fp16=True,
   #save_steps=400,
