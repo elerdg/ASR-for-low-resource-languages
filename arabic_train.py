@@ -62,20 +62,18 @@ len_validation=len(pd.DataFrame(common_voice_validation)["audio"])
 
 print(f" FILE AUDIO PER DATAFRAME    train: {len_train},        test: {len_test},     validation: {len_validation}")
 
-
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_validation=common_voice_validation.remove_columns(["accent", "age","client_id", "down_votes","gender","locale","segment","up_votes" ])
 
-
 """## Preprocessing dataset"""
 print('preprocessing the dataset')
 
-
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\""\‘\”\჻\~\՞\؟\،\,\॥\«\»\„\,\“\”\「\」\‘\’\《\》\[\]\{\}\=\`\_\+\<\>\‹\›\©\®\→\。\、\﹂\﹁\～\﹏\，\【\】\‥\〽\『\』\〝\⟨\⟩\〜\♪\؛\/\\\−\^\'\ʻ\ˆ\´\ʾ\‧\〟\'ً \'ٌ\'ُ\'ِ\'ّ\'ْ]'
 
 def remove_special_characters(batch):
-    batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
+    batch["sentence"] = re.sub(chars_to_remove_regex, ' ', batch["sentence"]).lower()
     return batch
 
 common_voice_train = common_voice_train.map(remove_special_characters)
@@ -150,7 +148,6 @@ common_voice_validation = common_voice_validation.cast_column("audio", Audio(sam
 
 #common_voice_test[0]['audio'] #sr = 16000
 
-
 print("## Prepare Dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]
@@ -169,9 +166,20 @@ common_voice_validation= common_voice_validation.map(prepare_dataset, remove_col
 common_voice_train= common_voice_train.filter(lambda x:x < 5.0*processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_test=common_voice_test.filter(lambda x:x < 5.0*processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_validation=common_voice_validation.filter(lambda x:x < 5.0*processor.feature_extractor.sampling_rate, input_columns=["input_length"])
+    
+""""Duration in seconds of TRAIN TEST AND VALIDATION sets""""
+def Audio_len_filter(common_voice_set):
+    len_t =[ ]
+    for el in common_voice_set["audio"]:
+        T= len(el["input_length"])/16000
+        len_t.append(T)
+    return sum(len_t)
 
-#for audio_ in common_voice_train[:10]["input_length"]:
-    #print(audio_)
+len_tr_filter = Audio_len_filter(common_voice_train)
+len_ts_filter = Audio_len_filter(common_voice_test)
+len_val_filter=Audio_len_filter(common_voice_validation)
+print("duration TRAIN in seconds ", len_tr_filter, " TEST in seconds", len_ts_filter , "VALIDATION in seconds", len_val_filter)  
+    
     
 """## Data Collator """
 import torch
