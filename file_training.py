@@ -96,9 +96,9 @@ def replace_hatted_characters(batch):
     
     return batch
 
-common_voice_train = common_voice_train.map(replace_hatted_characters)
-common_voice_test = common_voice_test.map(replace_hatted_characters)
-common_voice_validation= common_voice_validation.map(replace_hatted_characters)
+#common_voice_train = common_voice_train.map(replace_hatted_characters)
+#common_voice_test = common_voice_test.map(replace_hatted_characters)
+#common_voice_validation= common_voice_validation.map(replace_hatted_characters)
 
 def extract_all_chars(batch):
   all_text = " ".join(batch["sentence"])
@@ -124,7 +124,7 @@ len(vocab_dict)
 import json
 with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
- 
+
 
 """## Tokenizer"""
 print("Tokenizer")
@@ -143,12 +143,9 @@ from transformers import Wav2Vec2Processor, Wav2Vec2CTCTokenizer
 processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
 
 print("## Check and resampling")
-#common_voice_test[0]['audio']   #sr = 48000
 common_voice_train = common_voice_train.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
-
-#common_voice_test[0]['audio'] #sr = 16000
 
 print("## Prepare Dataset")
 def prepare_dataset(batch):
@@ -163,10 +160,12 @@ def prepare_dataset(batch):
 common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names)
 common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names)
 common_voice_validation = common_voice_validation.map(prepare_dataset, remove_columns=common_voice_validation.column_names)
-"""#take only first 5 seconds = 89000 number of samplings"""
+
+"""#Filter: take only first 5 seconds = 89000 number of samplings"""
 common_voice_train = common_voice_train.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_test = common_voice_test.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_validation = common_voice_validation.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
+"""#"""
 
 """## Data Collator """
 import torch
