@@ -48,7 +48,7 @@ os.environ["WANDB_DISABLED"] = "true"
 #common_voice_test = torchaudio.datasets.COMMONVOICE( root="common-voice/cv-corpus-5.1-2020-06-22/it", tsv='test.tsv', 10%)
 #common_voice_validation = torchaudio.datasets.COMMONVOICE(root="common-voice/cv-corpus-5.1-2020-06-22/it" , tsv= 'validation.tsv', 10%)
 
-common_voice_train_1 = load_dataset("common_voice", "it", split="train[:25%]")
+common_voice_train_1 = load_dataset("common_voice", "it", split="train[:15%]")
 common_voice_test = load_dataset("common_voice", "it", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
 common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
 
@@ -63,7 +63,7 @@ common_voice_train_1=[ el for el in common_voice_train_1 if len(el["audio"]["arr
 common_voice_test=[ el for el in common_voice_test if len(el["audio"]["array"]) < 5.0*16000]
 common_voice_validation=[ el for el in common_voice_validation if len(el["audio"]["array"]) < 5.0*16000]
     
-common_voice_train_2 = load_dataset("common_voice", "it", split="train[25:50%]")
+common_voice_train_2 = load_dataset("common_voice", "it", split="train[15%:30%]")
 common_voice_train_2 = common_voice_train_2.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_train_2=[ el for el in common_voice_train_2 if len(el["audio"]["array"]) < 5.0*16000]
 
@@ -88,6 +88,20 @@ common_voice_train= Dataset.from_pandas(df_train)
 common_voice_test= Dataset.from_pandas(df_test)
 common_voice_validation= Dataset.from_pandas(df_validation)
 
+""""Duration in seconds of TRAIN TEST AND VALIDATION sets""""
+def Audio_len_filter(common_voice_set):
+    len_t =[ ]
+    for el in common_voice_set["audio"]:
+        T= len(el["array"])/16000
+        len_t.append(T)
+    return sum(len_t)
+
+len_tr_filter = Audio_len_filter(common_voice_train)
+len_ts_filter = Audio_len_filter(common_voice_test)
+len_val_filter=Audio_len_filter(common_voice_validation)
+
+print("duration TRAIN in seconds ", len_tr_filter, " TEST in seconds", len_ts_filter , "VALIDATION in seconds", len_val_filter)
+
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
@@ -95,9 +109,7 @@ common_voice_validation = common_voice_validation.remove_columns(["accent", "age
 
 """Preprocessing dataset"""
 print('preprocessing the dataset')
-
 chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/]'
-
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
     return batch
@@ -147,7 +159,6 @@ import json
 with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
  
-
 print("Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
@@ -177,10 +188,6 @@ common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=comm
 common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names)
 common_voice_validation = common_voice_validation.map(prepare_dataset, remove_columns=common_voice_validation.column_names)
 
-#"""#take only first 5 seconds = 89000 number of samplings"""
-#common_voice_train = common_voice_train.filter(lambda x: x < 5.0* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
-#common_voice_test = common_voice_test.filter(lambda x: x < 5.0* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
-#common_voice_validation = common_voice_validation.filter(lambda x: x < 5.0* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 
 """## Data Collator """
 import torch
