@@ -42,9 +42,13 @@ import argparse
 
 os.environ["WANDB_DISABLED"] = "true"
 
-common_voice_train = load_dataset("common_voice", "ar", split="train[:1%]")
-common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
-common_voice_validation=load_dataset("common_voice", "ar", split="validation[:10%]")
+common_voice_train = load_dataset("common_voice_arabic/common_voice/ar/6.1.0/7cd6a2cd99f885b3ec1205a6aee65d9b8c7b36a2c0f482fa4a1dde3d29860f21/" split="train[:1%]")
+common_voice_test = load_dataset("common_voice_arabic/common_voice/ar/6.1.0/7cd6a2cd99f885b3ec1205a6aee65d9b8c7b36a2c0f482fa4a1dde3d29860f21/", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
+common_voice_test = load_dataset("common_voice_arabic/common_voice/ar/6.1.0/7cd6a2cd99f885b3ec1205a6aee65d9b8c7b36a2c0f482fa4a1dde3d29860f21/", split="validation[:10%]")
+
+#common_voice_train = load_dataset("common_voice", "ar", split="train[:1%]")
+#common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
+#common_voice_validation=load_dataset("common_voice", "ar", split="validation[:10%]")
 
 #common_voice_eval = load_dataset("sshmnt", data_dir="common-voice/cv-corpus-5.1-2020-06-22/it", split="validated")
 #common_voice_test = load_dataset("sshmnt",  data_dir="common-voice/cv-corpus-5.1-2020-06-22/it", split="test") ##NON SCARICARE OGNI VOLTA.
