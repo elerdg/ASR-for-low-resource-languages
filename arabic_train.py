@@ -41,19 +41,12 @@ import sys
 import argparse
 
 os.environ["WANDB_DISABLED"] = "true"
-
-common_voice_train = load_dataset("common_voice/ar/6.1.0/7cd6a2cd99f885b3ec1205a6aee65d9b8c7b36a2c0f482fa4a1dde3d29860f21/" split="train[:1%]")
-common_voice_test = load_dataset("common_voice/ar/6.1.0/7cd6a2cd99f885b3ec1205a6aee65d9b8c7b36a2c0f482fa4a1dde3d29860f21/", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
-common_voice_test = load_dataset("/common_voice/ar/6.1.0/7cd6a2cd99f885b3ec1205a6aee65d9b8c7b36a2c0f482fa4a1dde3d29860f21/", split="validation[:10%]")
-
-#common_voice_train = load_dataset("common_voice", "ar", split="train[:1%]")
-#common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
-#common_voice_validation=load_dataset("common_voice", "ar", split="validation[:10%]")
-
-#common_voice_test = load_dataset("sshmnt",  data_dir="common-voice/cv-corpus-5.1-2020-06-22/it", split="test") # from kasper
+#"""saved in /home/.cache/common_voice..."""
+common_voice_train = load_dataset("common_voice", "ar", split="train[:1%]")
+common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]") 
+common_voice_validation=load_dataset("common_voice", "ar", split="validation[:10%]")
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
-
 print('creating dataframe')
 pd.DataFrame(common_voice_train)
 pd.DataFrame(common_voice_test)
@@ -148,7 +141,6 @@ print("## Check and resampling")
 common_voice_train = common_voice_train.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
-
 #common_voice_test[0]['audio'] #sr = 16000
 
 print("## Prepare Dataset")
@@ -181,8 +173,7 @@ def Audio_len_filter(common_voice_set):
 len_tr_filter = Audio_len_filter(common_voice_train)
 len_ts_filter = Audio_len_filter(common_voice_test)
 len_val_filter=Audio_len_filter(common_voice_validation)
-print("duration TRAIN in seconds ", len_tr_filter, " TEST in seconds", len_ts_filter , "VALIDATION in seconds", len_val_filter)  
-    
+print("filtered duration TRAIN in seconds ", len_tr_filter, " TEST in seconds", len_ts_filter , "VALIDATION in seconds", len_val_filter)  
     
 """## Data Collator """
 import torch
@@ -236,7 +227,6 @@ class DataCollatorCTCWithPadding:
         return batch
 
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
-
 
 
 """## Cer Metric"""
