@@ -62,18 +62,26 @@ print("## Take audio shorter than 5 seconds long")
 common_voice_train_1=[ el for el in common_voice_train_1 if len(el["audio"]["array"]) < 5.0*16000]
 common_voice_test=[ el for el in common_voice_test if len(el["audio"]["array"]) < 5.0*16000]
 common_voice_validation=[ el for el in common_voice_validation if len(el["audio"]["array"]) < 5.0*16000]
-    
+
+df_train= pd.DataFrame(common_voice_train_1)
+print(len(df_train["audio"]))
+del common_voice_train_1
+
 common_voice_train_2 = load_dataset("common_voice", "it", split="train[15%:30%]")
 common_voice_train_2 = common_voice_train_2.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_train_2=[ el for el in common_voice_train_2 if len(el["audio"]["array"]) < 5.0*16000]
 
-common_voice_train_1.extend(common_voice_train_2)
-common_voice_train=common_voice_train_1    
-print(len(common_voice_train))
+df_train_2= pd.DataFrame(common_voice_train_2)
+print(len(df_train_2["audio"]))
+del common_voice_train_2
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
 print('creating dataframe')
-df_train = pd.DataFrame(common_voice_train)
+#"""concatenate dataframes"""
+df_train = df_train.append(df_train_2, ignore_index=True)
+del df_train_2
+
+###########
 df_test = pd.DataFrame(common_voice_test)
 df_validation = pd.DataFrame(common_voice_validation)
 
@@ -99,7 +107,6 @@ def Audio_len_filter(common_voice_set):
 len_tr_filter = Audio_len_filter(common_voice_train)
 len_ts_filter = Audio_len_filter(common_voice_test)
 len_val_filter=Audio_len_filter(common_voice_validation)
-
 print("duration TRAIN in seconds ", len_tr_filter, " TEST in seconds", len_ts_filter , "VALIDATION in seconds", len_val_filter)
 
 """take only path, audio, sentence """
@@ -109,7 +116,7 @@ common_voice_validation = common_voice_validation.remove_columns(["accent", "age
 
 """Preprocessing dataset"""
 print('preprocessing the dataset')
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/]'
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^]'
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
     return batch
@@ -162,9 +169,9 @@ with open('vocab.json', 'w') as vocab_file:
 print("Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
-repo_name = "wav2vec2-large-xls-r-300m-italian-colab"
+repo_name = "wav2vec2-large-xls-r-300m-italian-30"
 print("saving tokenizer")
-tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-italian-colab")
+tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-italian-30")
 
 """## FeatureExtractor"""
 from transformers import Wav2Vec2FeatureExtractor
@@ -286,7 +293,7 @@ model.freeze_feature_extractor()
 
 from transformers import TrainingArguments
 training_args = TrainingArguments(
-  output_dir="wav2vec2-large-xls-r-300m-italian-colab",
+  output_dir="wav2vec2-large-xls-r-300m-italian-30",
   group_by_length=True,
   per_device_train_batch_size=4,
   per_device_eval_batch_size=4,
@@ -328,7 +335,7 @@ print("ENDED TRAINING")
 
 """#MODEL and TOKENIZER have been saved in the output_dir directory"""
 print("model and tokenizer have been saved in the output_dir directory")
-#trainer.push_to_hub("wav2vec2-large-xls-r-300m-italian-colab")
+#trainer.push_to_hub("wav2vec2-large-xls-r-300m-italian-30")
 
 """# Evaluation"""
 print('evaluation')
