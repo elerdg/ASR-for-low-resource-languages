@@ -112,11 +112,9 @@ vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 print(vocab_dict)
 
-"""for character not present in the test"""
 vocab_dict["|"] = vocab_dict[" "]
 del vocab_dict[" "]
 
-"""### Vocab of Characters"""
 vocab_dict["[UNK]"] = len(vocab_dict)
 vocab_dict["[PAD]"] = len(vocab_dict)
 len(vocab_dict)
@@ -126,7 +124,7 @@ with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
 
 
-"""## Tokenizer"""
+"""Tokenizer"""
 print("Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
@@ -134,20 +132,20 @@ repo_name = "wav2vec2-large-xls-r-300m-italian-colab"
 print("saving tokenizer")
 tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-italian-colab")
 
-"""## FeatureExtractor"""
+"""FeatureExtractor"""
 from transformers import Wav2Vec2FeatureExtractor
 feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000, padding_value=0.0, do_normalize=True, return_attention_mask=True)
 
-"""## Processor = feature extractor + tokenizer"""
+"""Processor = feature extractor + tokenizer"""
 from transformers import Wav2Vec2Processor, Wav2Vec2CTCTokenizer
 processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
 
-print("## Check and resampling")
+print("Check and resampling")
 common_voice_train = common_voice_train.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
 
-print("## Prepare Dataset")
+print("Prepare Dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]
     # batched output is "un-batched"
@@ -161,13 +159,13 @@ common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=comm
 common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names)
 common_voice_validation = common_voice_validation.map(prepare_dataset, remove_columns=common_voice_validation.column_names)
 
-"""#Filter: take only first 5 seconds = 89000 number of samplings"""
+"""Filter: take only first 5 seconds = 89000 number of samplings"""
 common_voice_train = common_voice_train.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_test = common_voice_test.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_validation = common_voice_validation.filter(lambda x: x < 5.5* processor.feature_extractor.sampling_rate, input_columns=["input_length"])
-"""#"""
 
-"""## Data Collator """
+
+"""Data Collator """
 import torch
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -221,7 +219,7 @@ class DataCollatorCTCWithPadding:
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 
 
-"""## Cer Metric"""
+"""Metrics"""
 cer_metric = load_metric("cer")
 wer_metric = load_metric("wer")
 
@@ -293,11 +291,11 @@ trainer = Trainer(
     train_dataset=common_voice_train, 
     eval_dataset=common_voice_validation,
     tokenizer=processor.feature_extractor,
-    callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
+    callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
 )
 
 
-#"""# Training """
+"""Training"""
 print("TRAINING")
 trainer.train()
 #trainer.train(resume_from_checkpoint = True)
