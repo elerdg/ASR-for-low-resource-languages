@@ -324,7 +324,7 @@ print("Prediction:")
 print(processor.decode(pred_ids))
 
 print("loading test with no changes")
-common_voice_test_transcription = load_dataset("common_voice", "tr", data_dir="./cv-corpus-6.1-2020-12-11", split="test")
+common_voice_test_transcription = load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:10%]")
 
 print("\nReference:")
 print(common_voice_test_transcription[0]["sentence"].lower())
