@@ -30,16 +30,6 @@ from transformers import Wav2Vec2CTCTokenizer
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 from transformers import AutoModelForCTC, Wav2Vec2Processor
-import random
-import re
-import torch
-import json
-from IPython.display import display, HTML
-from transformers import Wav2Vec2ForCTC
-from transformers import Wav2Vec2CTCTokenizer
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
-from transformers import AutoModelForCTC, Wav2Vec2Processor
 from datasets.utils.version import Version
 from datasets import load_dataset, load_metric, Audio
 import os
@@ -49,7 +39,6 @@ import argparse
 from torch import Tensor
 
 """load dataset"""
-from datasets import load_dataset, load_metric, Audio
 
 common_voice_train = load_dataset("common_voice", "it", split="train[:1%]")
 common_voice_test = load_dataset("common_voice", "it", split="test[:1%]")
@@ -180,7 +169,7 @@ import torch
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
-#"""Data Collator"""
+"""Data Collator"""
 @dataclass
 class DataCollatorCTCWithPadding:
     """
@@ -271,10 +260,10 @@ model = Wav2Vec2ForCTC.from_pretrained(
     vocab_size=len(processor.tokenizer),
 ).cuda()   ##
 
-#"""Freeze feauture extractor"""
+"""Freeze feauture extractor"""
 model.freeze_feature_extractor()
 
-#"""Parameters for training"""
+"""Parameters for training"""
 from transformers import TrainingArguments
 training_args = TrainingArguments(
   output_dir= "wav2vec2-large-xls-r-300m-italian-prova",
@@ -321,6 +310,8 @@ trainer.train()
 print("ENDED TRAINING")
 
 print("model and tokenizer have been saved in the output_dir directory")
+
+
 
 """Evaluation"""
 print("running evaluation")
