@@ -8,7 +8,7 @@ Original file is located at
 
 #Install datasets and transformers
 """
-
+############################# LOAD ONE PERCENTAGE OF TRAIN SET AT THE TIME
 # Commented out IPython magic to ensure Python compatibility.
 # %%capture 
 # !pip install datasets==2.1 
@@ -44,16 +44,11 @@ from torch import Tensor
 
 os.environ["WANDB_DISABLED"] = "true"
 
-#common_voice_train = torchaudio.datasets.COMMONVOICE(root= "common-voice/cv-corpus-6.1-2020-06-22/it", tsv= 'train.tsv', 10%)
-#common_voice_test = torchaudio.datasets.COMMONVOICE( root="common-voice/cv-corpus-5.1-2020-06-22/it", tsv='test.tsv', 10%)
-#common_voice_validation = torchaudio.datasets.COMMONVOICE(root="common-voice/cv-corpus-5.1-2020-06-22/it" , tsv= 'validation.tsv', 10%)
-
 common_voice_train_1 = load_dataset("common_voice", "it", split="train[:15%]")
 common_voice_test = load_dataset("common_voice", "it", split="test[:10%]") ##NON SCARICARE OGNI VOLTA.
 common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
 
 print("## Resampling")
-#common_voice_test[0]['audio']   #sr = 48000
 common_voice_train_1 = common_voice_train_1.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
