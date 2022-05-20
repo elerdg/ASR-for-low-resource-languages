@@ -47,16 +47,16 @@ common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]")
 common_voice_validation=load_dataset("common_voice", "ar", split="validation[:10%]")
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
-print('creating dataframe')
-pd.DataFrame(common_voice_train)
-pd.DataFrame(common_voice_test)
-pd.DataFrame(common_voice_validation)
+print('Number of audio files')
+#pd.DataFrame(common_voice_train)
+#pd.DataFrame(common_voice_test)
+#pd.DataFrame(common_voice_validation)
 
-len_train = len(pd.DataFrame(common_voice_train)["audio"])
-len_test = len(pd.DataFrame(common_voice_test)["audio"])
-len_validation=len(pd.DataFrame(common_voice_validation)["audio"])
+len_train = len(common_voice_train["audio"])
+len_test = len(common_voice_test["audio"])
+len_validation=len(common_voice_validation["audio"])
 
-print(f" FILE AUDIO PER DATAFRAME    train: {len_train},        test: {len_test},     validation: {len_validation}")
+print(f" FILE AUDIO PER SET    train: {len_train},        test: {len_test},     validation: {len_validation}")
 
 """take only path, audio, sentence """
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
@@ -66,7 +66,7 @@ common_voice_validation=common_voice_validation.remove_columns(["accent", "age",
 """## Preprocessing dataset"""
 print('preprocessing the dataset')
 
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\""\‘\”\჻\~\՞\؟\،\,\॥\«\»\„\,\“\”\「\」\‘\’\《\》\[\]\{\}\=\`\_\+\<\>\‹\›\©\®\→\。\、\﹂\﹁\～\﹏\，\【\】\‥\〽\『\』\〝\⟨\⟩\〜\♪\؛\/\\\−\^\'\ʻ\ˆ\´\ʾ\‧\〟\'ً \'ٌ\'ُ\'ِ\'ّ\'ْ]'
+chars_to_remove_regex = '[\—\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\""\‘\”\჻\~\՞\؟\،\,\॥\«\»\„\,\“\”\「\」\‘\’\《\》\[\]\{\}\=\`\_\+\<\>\‹\›\©\®\→\。\、\﹂\﹁\～\﹏\，\【\】\‥\〽\『\』\〝\⟨\⟩\〜\♪\؛\/\\\−\^\'\ʻ\ˆ\´\ʾ\‧\〟\'ً \'ٌ\'ُ\'ِ\'ّ\'ْ]'
 
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, ' ', batch["sentence"]).lower()
@@ -136,12 +136,11 @@ feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000
 from transformers import Wav2Vec2Processor, Wav2Vec2CTCTokenizer
 processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
 
-print("## Check and resampling")
-#common_voice_test[0]['audio']   #sr = 48000
+print("## Resampling")
 common_voice_train = common_voice_train.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 common_voice_validation = common_voice_validation.cast_column("audio", Audio(sampling_rate=16_000))
-#common_voice_test[0]['audio'] #sr = 16000
+
 
 print("## Prepare Dataset")
 def prepare_dataset(batch):
