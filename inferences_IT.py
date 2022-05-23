@@ -104,8 +104,8 @@ for i, sentence_ in enumerate(predictions):
 d={ "predictions":list_sent, "reference":list_ref, "CER score":list_cer, "WER score":list_wer }
 df = pd.DataFrame(d)
 
-mean_cer = df.["CER score"].mean()
-mean_wer = df.["WER score"].mean())
+mean_cer = df["CER score"].mean()
+mean_wer = df["WER score"].mean()
 d2={"Mean CER": mean_cer, "Mean WER": mean_wer}
 
 df.append(d2)
