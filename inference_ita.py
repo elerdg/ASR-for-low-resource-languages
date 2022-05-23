@@ -78,26 +78,35 @@ for el in common_voice_test["input_values"]:
     predicted_sentences = processor.decode(pred_ids)
     predictions.append(predicted_sentences)
 
-    #print(predictions)
-    for i, sentence_ in enumerate(predictions):
-        #d_predictions[sentence_]= transcription[i]["sentence"]
-        print(i, "Sentence: ",  sentence_)
-        print(i, "Reference: ",  transcription[i]["sentence"])
+list_sent=[]
+list_ref=[]
+list_cer=[]
+list_wer=[]
+for i, sentence_ in enumerate(predictions):
+    #print(i, sentence_)
+    d_predictions[sentence_]= transcription[i]["sentence"]
+    print(i, "Sentence: ",  sentence_)
+    print("Reference: ",  transcription[i]["sentence"])
+    result_cer= cer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
+    result_wer= wer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
+    print("CER: ", result_cer, "WER: ", result_wer)
 
-        result_cer= cer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
-        result_wer= wer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
+    list_sent.append(sentence_)
+    list_ref.append(transcription[i]["sentence"])
+    list_cer.append(result_cer)
+    list_wer.append(result_wer)
 
-        d={ "predictions":[sentence_],
-            "reference":[transcription[i]["sentence"]],
-            "CER score":[result_cer],
-            "WER_score":[result_cer],
-           }
+#print(len(list_sent), len(list_ref), len(list_cer))
+
+d={ "predictions":list_sent, "reference":list_ref, "CER score":list_cer, "WER score":list_wer }
+df = pd.DataFrame(d)
+
+mean_cer = df.["CER score"].mean()
+mean_wer = df.["WER score"].mean())
+d2={"Mean CER": mean_cer, "Mean WER": mean_wer}
+df.append(d2)
+
+df.to_csv("/data/disk1/data/erodegher/inference_it.csv")   
         
-        df = pd.DataFrame(data=d)
-        mean_cer = np.mean(df.CER_score)
-        mean_wer = np.mean(df.WER_score)
-        d2={"Mean CER": mean_cer, "Mean WER": mean_wer}
-        df.append(d2)
         
-        df.to_csv("/data/disk1/data/erodegher/inference.csv", sep="\t")
         
