@@ -36,7 +36,7 @@ print("preprocess data")
 chars_to_remove_regex = '[\—\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\""\‘\”\჻\~\՞\؟\،\,\॥\«\»\„\,\“\”\「\」\‘\’\《\》\[\]\{\}\=\`\_\+\<\>\‹\›\©\®\→\。\、\﹂\﹁\～\﹏\，\【\】\‥\〽\『\』\〝\⟨\⟩\〜\♪\؛\/\\\−\^\'\ʻ\ˆ\´\ʾ\‧\〟\'ً \'ٌ\'ُ\'ِ\'ّ\'ْ]'
 
 def remove_special_characters(batch):
-    batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
+    batch["sentence"] = re.sub(chars_to_remove_regex, ' ', batch["sentence"]).lower()
     return batch
 common_voice_test = common_voice_test.map(remove_special_characters)
 ## downsampling
