@@ -30,6 +30,15 @@ processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2ve
 
 ## import test set 
 common_voice_test= load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:20%]")
+
+## lower and no punctuation
+print("preprocess data") 
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~]'
+def remove_special_characters(batch):
+    batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
+    return batch
+common_voice_test = common_voice_test.map(remove_special_characters)
+## downsampling
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 
 ## import metrics
@@ -52,6 +61,7 @@ common_voice_test= common_voice_test.filter(lambda x : x < 5.0*16000, input_colu
 """#Loading original Transcriptions"""
 print("loading transcriptions")
 common_voice_transcription= load_dataset("common_voice", "it", split="test[:20%]")
+common_voice_transcription = common_voice_transcription.map(remove_special_characters)
 common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
 transcription=[ el for el in common_voice_transcription if len(el["audio"]["array"]) < 5.0*16000]
 
@@ -92,8 +102,14 @@ for i, sentence_ in enumerate(predictions):
 #print(len(list_sent), len(list_ref), len(list_cer))
 
 d={ "predictions":list_sent, "reference":list_ref, "CER score":list_cer, "WER score":list_wer }
-
 df = pd.DataFrame(d)
+
+mean_cer = df.["CER score"].mean()
+mean_wer = df.["WER score"].mean())
+d2={"Mean CER": mean_cer, "Mean WER": mean_wer}
+
+df.append(d2)
+
 df.to_csv("/data/disk1/data/erodegher/inference_it.csv")
         
 
