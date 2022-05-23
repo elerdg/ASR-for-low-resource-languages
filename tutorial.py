@@ -40,9 +40,9 @@ from torch import Tensor
 
 """load dataset"""
 
-common_voice_train = load_dataset("common_voice", "it", split="train[:1%]")
-common_voice_test = load_dataset("common_voice", "it", split="test[:1%]")
-common_voice_validation = load_dataset("common_voice", "it", split="validation[:1%]")
+common_voice_train = load_dataset("common_voice", "it", split="train[:10%]")
+common_voice_test = load_dataset("common_voice", "it", split="test[:10%]")
+common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
 
 len_train = len(common_voice_train["audio"])
 len_test = len(common_voice_test["audio"])
@@ -90,10 +90,14 @@ vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size
 vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 vocab_validation = common_voice_validation.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 
-vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
-vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
-print(vocab_dict)
+#vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
+#vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
+#print(vocab_dict)
 
+vocab_list = ["'", "’", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "à”, "è", "é", "ì", "í", "ò", "ù","ú" ]
+vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
+print(vocab_dict)                    
+    
 vocab_dict["|"] = vocab_dict[" "]
 del vocab_dict[" "]
 vocab_dict["[UNK]"] = len(vocab_dict)
