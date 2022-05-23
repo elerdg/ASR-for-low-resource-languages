@@ -61,6 +61,7 @@ common_voice_test= common_voice_test.filter(lambda x : x < 5.0*16000, input_colu
 """#Loading original Transcriptions"""
 print("loading transcriptions")
 common_voice_transcription= load_dataset("common_voice", "it", split="test[:10%]")
+common_voice_transcription = common_voice_transcription.map(remove_special_characters)
 common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
 transcription=[ el for el in common_voice_transcription if len(el["audio"]["array"]) < 5.0*16000]
 
@@ -91,6 +92,12 @@ for el in common_voice_test["input_values"]:
             "CER score":[result_cer],
             "WER_score":[result_cer],
            }
+        
         df = pd.DataFrame(data=d)
+        mean_cer = np.mean(df.CER_score)
+        mean_wer = np.mean(df.WER_score)
+        d2={"Mean CER": mean_cer, "Mean WER": mean_wer}
+        df.append(d2)
+        
         df.to_csv("/data/disk1/data/erodegher/inference.csv", sep="\t")
         
