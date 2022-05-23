@@ -18,7 +18,6 @@ import numpy as np
 import sys
 
 #"""import the model, processor, tokenizer"""
-
 print("loading saved model")
 saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-colab/checkpoint-36000/", local_files_only = True)
 saved_model.to("cuda")
@@ -31,6 +30,14 @@ processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2ve
 
 ## import test set 
 common_voice_test= load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:10%]")
+
+"""Preprocessing Dataset""" 
+print("preprocess data") #lower #no punctuation
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~]'
+def remove_special_characters(batch):
+    batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
+    return batch
+common_voice_test = common_voice_test.map(remove_special_characters)
 common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
 
 ## import metrics
