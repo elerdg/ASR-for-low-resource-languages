@@ -101,14 +101,14 @@ for i, sentence_ in enumerate(predictions):
 
 #print(len(list_sent), len(list_ref), len(list_cer))
 
-d={ "predictions":list_sent, "reference":list_ref, "CER score":list_cer, "WER score":list_wer }
+d= {"predictions":list_sent, "reference":list_ref }
 df = pd.DataFrame(d)
 
-mean_cer = df["CER score"].mean()
-mean_wer = df["WER score"].mean()
-d2={"Mean CER": mean_cer, "Mean WER": mean_wer}
+d2={"CER score": sum(list_cer)/len(list_cer), "WER score": sum(list_wer)/len(list_wer) }
+print(d2)
 
-df.append(d2)
+#df2= pd.DataFrame(d2)
+#df.append(df2)
 
 df.to_csv("/data/disk1/data/erodegher/inference_it.csv")
         
