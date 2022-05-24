@@ -112,10 +112,11 @@ print("Creating the tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
 
-print("saving tokenizer")
-#repo_name = "wav2vec2-large-xls-r-300m-italian-prova"
-#tokenizer.push_to_hub(repo_name)
-tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-italian-prova")
+#print("saving tokenizer")
+#tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-italian-prova")
+
+print("load tokenizer form local folder:  tokenizer_ita. \ncontains 38 classes: 26 letters of the italian alphabet, 8 graphic accented vowels and 2 apostrophes + 3 special tokens PAD UNK and space ")
+tokenizer= Wav2Vec2CTCTokenizer.from_pretrained("/data/disk1/data/erodegher/tokenizer_ita/", local_files_only=True)
 
 """Feature Extractor"""
 from transformers import Wav2Vec2FeatureExtractor
