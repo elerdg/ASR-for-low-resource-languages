@@ -42,7 +42,7 @@ import argparse
 
 os.environ["WANDB_DISABLED"] = "true"
 #"""load from /home/.cache/common_voice..."""
-common_voice_train = load_dataset("common_voice", "ar" , split="train[:80%]")
+common_voice_train = load_dataset("common_voice", "ar" , split="train[:60%]")
 common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]" )
 common_voice_validation=load_dataset("common_voice",  "ar", split="validation[:10%]")
 
@@ -110,16 +110,15 @@ vocab_dict["[PAD]"] = len(vocab_dict)
 len(vocab_dict)
 
 import json
-with open('vocab.json', 'w') as vocab_file:
-    json.dump(vocab_dict, vocab_file)
-
+#with open('vocab.json', 'w') as vocab_file:
+    #json.dump(vocab_dict, vocab_file)
    
 print("## Tokenizer")
 from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
-#repo_name = "wav2vec2-large-xls-r-300m-arabic-50"
-tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-arabic-80")
-
+#tokenizer.save_pretrained("./wav2vec2-large-xls-r-300m-arabic-60")
+print("load tokenizer from local folder: tokenizer_ar \n the tokenizer contains 40 characters: 37 + 3 special tokens ")
+tokenizer= Wav2Vec2CTCTokenizer.from_pretrained("/data/disk1/data/erodegher/tokenizer_ar/", local_files_only=True)
 
 """## FeatureExtractor"""
 from transformers import Wav2Vec2FeatureExtractor
@@ -266,7 +265,7 @@ model.freeze_feature_extractor()
 
 from transformers import TrainingArguments
 training_args = TrainingArguments(
-  output_dir="wav2vec2-large-xls-r-300m-arabic-80",
+  output_dir="wav2vec2-large-xls-r-300m-arabic-60",
   group_by_length=True,
   per_device_train_batch_size=4,
   per_device_eval_batch_size=4,
