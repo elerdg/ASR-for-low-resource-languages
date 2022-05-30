@@ -79,24 +79,24 @@ for el in common_voice_test["input_values"]:
     #print(predictions)
 
 """create vocab from tokenizer"""
-#vocab_dict = processor.tokenizer.get_vocab()
-#sorted_vocab_dict = {k.lower(): v for k, v in sorted(vocab_dict.items(), key=lambda item: item[1])}
-#print(vocab_dict)
-#print(sorted_vocab_dict)
+vocab_dict = processor.tokenizer.get_vocab()
+sorted_vocab_dict = {k.lower(): v for k, v in sorted(vocab_dict.items(), key=lambda item: item[1])}
+print(vocab_dict)
+print(sorted_vocab_dict)
 
-vocab_dict = tokenizer.get_vocab()
-sorted_vocab = sorted((value, key) for (key,value) in vocab_dict.items())
-vocab = [x[1].replace("|", " ") if x[1] not in tokenizer.all_special_tokens else "_" for x in sorted_vocab]
-print(vocab)
+#vocab_dict = tokenizer.get_vocab()
+#sorted_vocab = sorted((value, key) for (key,value) in vocab_dict.items())
+#vocab = [x[1].replace("|", " ") if x[1] not in tokenizer.all_special_tokens else "_" for x in sorted_vocab]
+#print(vocab)
 #sorted_vocab_dict = [''.join(vocab)]
-sorted_vocab_dict = ["abcdefghilmnopqrstuvzxkyèòàóúùìé"]
+#sorted_vocab_dict = ["abcdefghilmnopqrstuvzxkyèòàóúùìé"]
 print(sorted_vocab_dict)
 
 
 print("""decoder from language model""")
 from pyctcdecode import build_ctcdecoder
 
-decoder = build_ctcdecoder(labels=list(sorted_vocab_dict),
+decoder = build_ctcdecoder(labels=list(sorted_vocab_dict.keys()),
                             kenlm_model_path="/data/disk1/data/erodegher/ita.arpa",)
 
 
