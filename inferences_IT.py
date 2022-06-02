@@ -29,7 +29,7 @@ print("loading processor")
 processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-italian-new/checkpoint-/", local_files_only=True)
 
 ## import test set 
-common_voice_test= load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:20%]")
+data_test= load_dataset("common_voice", "it", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:20%]")
 
 ## lower and no punctuation
 print("preprocess data") 
@@ -37,9 +37,9 @@ chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
     return batch
-common_voice_test = common_voice_test.map(remove_special_characters)
+data_test = data_test.map(remove_special_characters)
 ## downsampling
-common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
+data_test = data_test.cast_column("audio", Audio(sampling_rate=16_000))
 
 ## import metrics
 wer = load_metric("wer")
@@ -55,14 +55,15 @@ def prepare_dataset(batch):
         batch["labels"] = processor(batch["sentence"]).input_ids
     return batch
 
-common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names )
+common_voice_test = data_test.map(prepare_dataset, remove_columns=data_test.column_names )
 common_voice_test= common_voice_test.filter(lambda x : x < 5.0*16000, input_columns=["input_length"])
 
 """#Loading original Transcriptions"""
 print("loading transcriptions")
-common_voice_transcription= load_dataset("common_voice", "it", split="test[:20%]")
-common_voice_transcription = common_voice_transcription.map(remove_special_characters)
-common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
+#common_voice_transcription= load_dataset("common_voice", "it", split="test[:20%]")
+#common_voice_transcription = common_voice_transcription.map(remove_special_characters)
+#common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
+common_voice_transcription= data_test
 transcription=[ el for el in common_voice_transcription if len(el["audio"]["array"]) < 5.0*16000]
    
 """# Evaluation"""
