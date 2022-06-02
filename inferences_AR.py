@@ -56,7 +56,7 @@ def prepare_dataset(batch):
         batch["labels"] = processor(batch["sentence"]).input_ids
     return batch
 
-common_voice_test = data_test.map(prepare_dataset, remove_columns=common_voice_test.column_names )
+common_voice_test = data_test.map(prepare_dataset, remove_columns=data_test.column_names )
 common_voice_test= common_voice_test.filter(lambda x : x < 5.0*16000, input_columns=["input_length"])
 
 """#Loading original Transcriptions"""
