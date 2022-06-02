@@ -64,11 +64,9 @@ common_voice_transcription= load_dataset("common_voice", "it", split="test[:20%]
 common_voice_transcription = common_voice_transcription.map(remove_special_characters)
 common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
 transcription=[ el for el in common_voice_transcription if len(el["audio"]["array"]) < 5.0*16000]
-
-
+   
 """# Evaluation"""
 print('evaluation')
-d_predictions={}
 predictions = [ ]
 for el in common_voice_test["input_values"]:
     warnings.filterwarnings("ignore")
@@ -83,33 +81,28 @@ for el in common_voice_test["input_values"]:
 
 list_sent=[]
 list_ref=[]
-list_cer=[]
-list_wer=[]
+#list_cer=[]
+#list_wer=[]
+
 for i, sentence_ in enumerate(predictions):
     #print(i, sentence_)
-    d_predictions[sentence_]= transcription[i]["sentence"]
     print(i, "Sentence: ",  sentence_)
     print("Reference: ",  transcription[i]["sentence"])
-    result_cer= cer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
-    result_wer= wer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
-    print("CER: ", result_cer, "WER: ", result_wer)
-
     list_sent.append(sentence_)
     list_ref.append(transcription[i]["sentence"])
-    list_cer.append(result_cer)
-    list_wer.append(result_wer)
 
+result_cer= cer.compute(predictions=[" ".join(list_sent)], references=[" ".join(list_ref)] )
+print("CER", result_cer)
+
+result_wer= wer.compute(predictions=[list_sent], references=[list_ref])
+print("WER: ", result_wer)
+
+#list_cer.append(result_cer)
+#list_wer.append(result_wer)
 #print(len(list_sent), len(list_ref), len(list_cer))
 
 d={ "predictions":list_sent, "reference":list_ref }
-d2= {"CER score": [sum(list_cer)/len(list_cer)], "WER score": [sum(list_wer)/len(list_wer)] }
-print (d2)
 
 df = pd.DataFrame(d)
-#df2= pd.DataFrame(d2)
-#df.append(df2, ignore_index = True)
-
-df.to_csv("/data/disk1/data/erodegher/CSV_ITA_INFERENCES.csv")
-        
-
+df.to_csv("/data/disk1/data/erodegher/CSV_ITA_INFERENCES-1.csv")
 
