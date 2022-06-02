@@ -21,15 +21,15 @@ import warnings
 #"""import the model, processor, tokenizer"""
 
 print("loading saved model")
-saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-arabic-80/checkpoint-10780/", local_files_only = True)
+saved_model = AutoModelForCTC.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-arabic-80/checkpoint-7546/", local_files_only = True)
 saved_model.to("cuda")
 print("loading tokenizer")
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("/data/disk1/data/erodegher/tokenizer_ar/", local_files_only = True)
 print("loading processor")
-processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-arabic-80/checkpoint-10780/", local_files_only=True)
+processor = Wav2Vec2Processor.from_pretrained("/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-arabic-80/checkpoint-7546/", local_files_only=True)
 
 ## import test set 
-common_voice_test= load_dataset("common_voice", "ar", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:20%]")
+data_test= load_dataset("common_voice", "ar", data_dir="./cv-corpus-6.1-2020-12-11", split="test[:20%]")
 
 ## lower and no punctuation
 print("preprocess data") 
@@ -38,10 +38,9 @@ chars_to_remove_regex = '[\—\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, ' ', batch["sentence"]).lower()
     return batch
-common_voice_test = common_voice_test.map(remove_special_characters)
-
+data_test = data_test.map(remove_special_characters)
 ## downsampling
-common_voice_test = common_voice_test.cast_column("audio", Audio(sampling_rate=16_000))
+data_test = data_test.cast_column("audio", Audio(sampling_rate=16_000))
 
 ## import metrics
 wer = load_metric("wer")
@@ -57,20 +56,19 @@ def prepare_dataset(batch):
         batch["labels"] = processor(batch["sentence"]).input_ids
     return batch
 
-common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names )
+common_voice_test = data_test.map(prepare_dataset, remove_columns=common_voice_test.column_names )
 common_voice_test= common_voice_test.filter(lambda x : x < 5.0*16000, input_columns=["input_length"])
 
 """#Loading original Transcriptions"""
 print("loading transcriptions")
-common_voice_transcription= load_dataset("common_voice", "ar", split="test[:20%]")
-common_voice_transcription = common_voice_transcription.map(remove_special_characters)
-common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
+#common_voice_transcription= load_dataset("common_voice", "ar", split="test[:20%]")
+#common_voice_transcription = common_voice_transcription.map(remove_special_characters)
+#common_voice_transcription=common_voice_transcription.cast_column("audio", Audio(sampling_rate=16_000))
+common_voice_transcription = data_test
 transcription=[ el for el in common_voice_transcription if len(el["audio"]["array"]) < 5.0*16000]
-
 
 """# Evaluation"""
 print('evaluation')
-d_predictions={}
 predictions = [ ]
 for el in common_voice_test["input_values"]:
     warnings.filterwarnings("ignore")
@@ -85,32 +83,29 @@ for el in common_voice_test["input_values"]:
 
 list_sent=[]
 list_ref=[]
-list_cer=[]
-list_wer=[]
+#list_cer=[]
+#list_wer=[]
+
 for i, sentence_ in enumerate(predictions):
     #print(i, sentence_)
-    d_predictions[sentence_]= transcription[i]["sentence"]
     print(i, "Sentence: ",  sentence_)
     print("Reference: ",  transcription[i]["sentence"])
-    result_cer= cer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
-    result_wer= wer.compute(predictions=[sentence_], references=[transcription[i]["sentence"]])
-    print("CER: ", result_cer, "WER: ", result_wer)
-
     list_sent.append(sentence_)
     list_ref.append(transcription[i]["sentence"])
-    list_cer.append(result_cer)
-    list_wer.append(result_wer)
 
+result_cer= cer.compute(predictions=[" ".join(list_sent)], references=[" ".join(list_ref)] )
+print("CER", result_cer)
+
+result_wer= wer.compute(predictions=[list_sent], references=[list_ref])
+print("WER: ", result_wer)
+
+#list_cer.append(result_cer)
+#list_wer.append(result_wer)
 #print(len(list_sent), len(list_ref), len(list_cer))
 
-d= {"predictions":list_sent, "reference":list_ref }
+d={ "predictions":list_sent, "reference":list_ref }
+
 df = pd.DataFrame(d)
 
-d2={"CER score": sum(list_cer)/len(list_cer), "WER score": sum(list_wer)/len(list_wer) }
-print(d2)
-
-#df2= pd.DataFrame(d2)
-#df.append(df2)
-
-df.to_csv("/data/disk1/data/erodegher/inference_ar.csv")
+df.to_csv("/data/disk1/data/erodegher/INFERENCES_AR-80.csv")
         
