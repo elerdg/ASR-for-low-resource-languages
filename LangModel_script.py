@@ -41,7 +41,7 @@ data_test = data_test.map(remove_special_characters)
 ## downsampling
 data_test = data_test.cast_column("audio", Audio(sampling_rate=16_000))
 
-# Preprocessing the datasets.
+"""Preprocessing the datasets."""
 print("Preprocessing Dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]    
@@ -85,7 +85,7 @@ processor_with_lm = Wav2Vec2ProcessorWithLM(
 )
 
 
-"""# Evaluation"""
+"""Evaluation"""
 print("""evaluation""")
 #predictions = []
 transcription_list=[]
@@ -97,7 +97,7 @@ for el in common_voice_test["input_values"]:
     #print(transcription)
     transcription_list.append(transcription)
 
-## import metrics
+"""import metrics"""
 wer = load_metric("wer")
 cer = load_metric("cer")
 
@@ -113,13 +113,13 @@ for i, sentence_ in enumerate(transcription_list):
     list_ref.append(references[i]["sentence"])
 
 result_cer= cer.compute(predictions=["".join(list_sent)], references=["".join(list_ref)])
-#result_wer= wer.compute(predictions=[list_sent], references=[list_ref])
+result_wer= wer.compute(predictions=[list_sent], references=[list_ref])
 
-#print("WER", result_wer)
+print("WER", result_wer)
 print("CER", result_cer)    
 
 """Write inference file """
 
 d={ "predictions":list_sent, "reference":list_ref }
 df = pd.DataFrame(d)
-df.to_csv("/data/disk1/data/erodegher/CSV_ITA_INFERENCES.csv")
+df.to_csv("/data/disk1/data/erodegher/CSV_ITA_INFERENCES_WITH_LM.csv")
