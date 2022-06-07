@@ -95,7 +95,7 @@ for el in common_voice_test["input_values"]:
     #print(logits.shape)
     transcription = processor_with_lm.batch_decode(logits.detach().cpu().numpy()).text
     #print(transcription)
-    transcription_list.append(transcription)
+    transcription_list.append(transcription[0])
 
 """import metrics"""
 wer = load_metric("wer")
