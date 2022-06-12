@@ -42,26 +42,23 @@ import argparse
 
 os.environ["WANDB_DISABLED"] = "true"
 #"""load from /home/.cache/common_voice..."""
-common_voice_train = load_dataset("common_voice", "ar" , split="train[:60%]")
-common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]" )
-common_voice_validation=load_dataset("common_voice",  "ar", split="validation[:10%]")
+common_voice_train = load_dataset("common_voice", "ar", split="train[:80%]")
+common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_test = load_dataset("common_voice", "ar", split="test[:10%]")
+common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_validation = load_dataset("common_voice", "ar", split="validation[:10%]")
+common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 """the information are about : client id, path, audio file, the transcribed sentence , votes , age, gender , accent, the locale of the speaker, and segment """
 print('Number of Audio files')
-len_train = len(common_voice_train["audio"])
-len_test = len(common_voice_test["audio"])
-len_validation=len(common_voice_validation["audio"])
+len_train = len(common_voice_train)
+len_test = len(common_voice_test)
+len_validation=len(common_voice_validation)
 
 print(f" FILE AUDIO PER SET    train: {len_train},        test: {len_test},     validation: {len_validation}")
 
-"""take only path, audio, sentence """
-common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-common_voice_validation=common_voice_validation.remove_columns(["accent", "age","client_id", "down_votes","gender","locale","segment","up_votes" ])
-
 """## Preprocessing dataset"""
 print('preprocessing the dataset')
-
 chars_to_remove_regex = '[\—\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\""\‘\”\჻\~\՞\؟\،\,\॥\«\»\„\,\“\”\「\」\‘\’\《\》\[\]\{\}\=\`\_\+\<\>\‹\›\©\®\→\。\、\﹂\﹁\～\﹏\，\【\】\‥\〽\『\』\〝\⟨\⟩\〜\♪\؛\/\\\−\^\'\ʻ\ˆ\´\ʾ\‧\〟\'ً \'ٌ\'ُ\'ِ\'ّ\'ْ]'
 
 def remove_special_characters(batch):
@@ -154,11 +151,11 @@ common_voice_validation=common_voice_validation.filter(lambda x:x < 5.0*processo
     
 #""""Filtered Duration in seconds of TRAIN TEST AND VALIDATION sets""""
 def Audio_len_filter(common_voice_set):
-    len_t =[ ]
+    len_t = 0
     for el in common_voice_set:
         T= el["input_length"]/16000
-        len_t.append(T)
-    return sum(len_t)
+        len_t= len_t+T)
+    return len_t
 
 len_tr_filter = Audio_len_filter(common_voice_train)
 len_ts_filter = Audio_len_filter(common_voice_test)
@@ -258,7 +255,7 @@ model = Wav2Vec2ForCTC.from_pretrained(
     ctc_loss_reduction="mean", 
     pad_token_id=processor.tokenizer.pad_token_id,
     vocab_size=len(processor.tokenizer),
-).cuda()
+)  #
 
 model.freeze_feature_extractor()
 
