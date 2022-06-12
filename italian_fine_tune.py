@@ -40,19 +40,17 @@ from torch import Tensor
 
 """load dataset"""
 
-common_voice_train = load_dataset("common_voice", "it", split="train[:20%]")
-common_voice_test = load_dataset("common_voice", "it", split="test[:10%]")
-common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
-
-len_train = len(common_voice_train["audio"])
-len_test = len(common_voice_test["audio"])
-len_validation=len(common_voice_validation["audio"])
-print(f" FILE AUDIO PER SET   train: {len_train},     test: {len_test},     validation: {len_validation}")
-
-"""take only path, audio, sentence """
+common_voice_train = load_dataset("common_voice", "it", split="train[:50%]")
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_test = load_dataset("common_voice", "it", split="test[:10%]")
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
 common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+
+len_train = len(common_voice_train)
+len_test = len(common_voice_test)
+len_validation=len(common_voice_validation)
+print(f" FILE AUDIO PER SET   train: {len_train},     test: {len_test},     validation: {len_validation}")
 
 """Preprocessing Dataset"""
 print("preprocess data")
@@ -159,11 +157,11 @@ common_voice_train[0]["input_length"]
 
 """see the length filtered"""
 def Audio_len_filter(common_voice_set):
-    len_t =[ ]
+    len_t =0
     for el in common_voice_set:
         T= el["input_length"]/16000
-        len_t.append(T)
-    return sum(len_t)
+        len_t= len_t+T
+    return len_t
 
 len_tr_filter = Audio_len_filter(common_voice_train)
 len_ts_filter = Audio_len_filter(common_voice_test)
@@ -263,7 +261,7 @@ model = Wav2Vec2ForCTC.from_pretrained(
     ctc_loss_reduction="mean", 
     pad_token_id=processor.tokenizer.pad_token_id,
     vocab_size=len(processor.tokenizer),
-).cuda()   ##
+)   ##
 
 """Freeze feauture extractor"""
 model.freeze_feature_extractor()
