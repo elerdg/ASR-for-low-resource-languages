@@ -66,6 +66,36 @@ print("loading transcriptions")
 common_voice_transcription= data_test
 transcription=[ el for el in common_voice_transcription if len(el["audio"]["array"]) < 5.0*16000]
    
+    
+"""WER METRICS"""    
+def wer_score(hyp, ref):
+    wer_dict={ }
+    N = len(hyp)
+    M = len(ref)
+    L = np.zeros((N,M))
+    
+    for i in range(0, N):
+        for j in range(0, M):
+            if min(i,j) == 0:
+                L[i,j] = max(i,j)
+        else:
+            deletion = L[i-1,j] + 1
+            insertion = L[i,j-1] + 1
+            sub = 1 if hyp[i] != ref[j] else 0
+            substitution = L[i-1,j-1] + sub
+            L[i,j] = min(deletion, min(insertion, substitution))
+            print("{} - {}: del {} ins {} sub {} s {}".format(hyp[i], ref[j], deletion, insertion, substitution, sub))
+        
+            wer_dict[ f'{hyp[i]} - {ref[j]}'] = [deletion, insertion, substitution, sub] 
+            with open("/data/disk1/data/erodegher/WER_ita_score.txt","a") as f:
+                f.writelines("{} - {}: del {} ins {} sub {} s {}".format(hyp[i], ref[j], deletion, insertion, substitution, sub))
+
+            json_obj = json.dumps(wer_dict)
+            file = open('/data/disk1/data/erodegher/ita_file.json', 'a',encoding="utf-8")
+            file.write(json_obj)
+            
+    return int(L[N-1, M-1])    
+    
 """# Evaluation"""
 print('evaluation')
 predictions = [ ]
@@ -82,8 +112,6 @@ for el in common_voice_test["input_values"]:
 
 list_sent=[]
 list_ref=[]
-#list_cer=[]
-#list_wer=[]
 
 for i, sentence_ in enumerate(predictions):
     #print(i, sentence_)
@@ -91,16 +119,13 @@ for i, sentence_ in enumerate(predictions):
     print("Reference: ",  transcription[i]["sentence"])
     list_sent.append(sentence_)
     list_ref.append(transcription[i]["sentence"])
+    print(wer_score(sentence_, transcription[i]["sentence"]))
 
 result_cer= cer.compute(predictions=[" ".join(list_sent)], references=[" ".join(list_ref)] )
 print("CER", result_cer)
 
 result_wer= wer.compute(predictions=[list_sent], references=[list_ref])
 print("WER: ", result_wer)
-
-#list_cer.append(result_cer)
-#list_wer.append(result_wer)
-#print(len(list_sent), len(list_ref), len(list_cer))
 
 d={ "predictions":list_sent, "reference":list_ref }
 
