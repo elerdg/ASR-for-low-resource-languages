@@ -63,7 +63,7 @@ print(f" FILE AUDIO PER SET   train: {len_train},     test: {len_test},     vali
 """Preprocessing Dataset"""
 print("preprocess data")
 import re
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~]'
+chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~\_\-\¿\¡\—]'
 
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
@@ -100,7 +100,7 @@ vocab_validation = common_voice_validation.map(extract_all_chars, batched=True, 
 #vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 #print(vocab_dict)
 
-vocab_list = ["'", " ", "’", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "à", "è", "é", "ì", "í", "ò", "ù","ú"]
+vocab_list = ["'", " ", "’", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","ll","á","ü","ç","ï" ]
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 print(vocab_dict)                    
     
