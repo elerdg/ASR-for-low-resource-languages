@@ -314,7 +314,7 @@ trainer = Trainer(
     callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
 )
 
-"""Training:
+"""Training
 if "out-of-memory" error: reduce per_device_train_batch_size to 8 or even less and increase gradient_accumulation."""
 
 print("TRAINING")
@@ -323,7 +323,6 @@ trainer.train()
 print("ENDED TRAINING")
 
 print("model and tokenizer have been saved in the output_dir directory")
-
 
 
 """Evaluation"""
