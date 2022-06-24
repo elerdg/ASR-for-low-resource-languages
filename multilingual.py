@@ -121,7 +121,7 @@ vocab_validation = common_voice_validation.map(extract_all_chars, batched=True, 
 #vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 #print(vocab_dict)
 
-vocab_list = ["'", " ", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","ll","á","ü","ç","ï","ù","à","è","ì","í","ò", "’"]
+vocab_list = ["'", " ", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","ll","á","ü","ç","ï","ù","à","è","ì","í","ò"]
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
 print(vocab_dict)                    
     
