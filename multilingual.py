@@ -1,99 +1,57 @@
 # -*- coding: utf-8 -*-
-"""tutorial.ipynb"""
 
-# Commented out IPython magic to ensure Python compatibility.
-# %%capture 
-# !pip install datasets==2.1 
-# !pip install transformers==4.18 
-# !pip install huggingface_hub==0.5.1 
-# !pip install torchaudio==0.11  
-# !pip install librosa 
-# !pip install jiwer   
-# ! git config --global credential.helper store 
-# ! apt install git-lfs
-
-import pandas as pd
-from datasets import ClassLabel
-import random
-import re
-import torch
-import json
-from IPython.display import display, HTML
-from transformers import Wav2Vec2ForCTC
-from transformers import Wav2Vec2CTCTokenizer
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Union
-from transformers import AutoModelForCTC, Wav2Vec2Processor
-from datasets.utils.version import Version
 from datasets import load_dataset, load_metric, Audio, concatenate_datasets
-import os
-import numpy as np
-import sys
 import argparse
-from torch import Tensor
 
 parser = argparse.ArgumentParser(description="Code to fine-tune pre-trained model wav2vec-xls-r with small amount of data")
-parser.add_argument('-l1', '--lang_code1', type=str, help='select the first language from Common Voice', default='it')
-parser.add_argument('-tp1', '--train_pct1', type=int, help='pct train set 1', default=10)
-parser.add_argument('-l2', '--lang_code2', type=str, help='select the second language from Common Voice', default='gl')
-parser.add_argument('-tp2', '--train_pct2', type=int, help='pct train set 2', default=1)
+parser.add_argument('-tp_it', '--train_pct_it', type=int, help='pct train set', default=10)
+parser.add_argument('-tp_gl', '--train_pct_gl', type=int, help='pct train set', default=10)
 arg= parser.parse_args()
+train_pct_it = arg.train_pct_it
+train_pct_gl = arg.train_pct_gl
 
-lang1 = arg.lang_code1
-train_pct1 = arg.train_pct1
-lang2 = arg.lang_code2
-train_pct2 = arg.train_pct2
+"""load dataset italian"""
+common_voice_train_it = load_dataset("common_voice", "it" , split=f"train[:{train_pct_it}%]")
+common_voice_train_it = common_voice_train_it.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_test_it = load_dataset("common_voice", "it", split="test[:10%]")
+common_voice_test_it = common_voice_test_it.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_validation_it = load_dataset("common_voice", "it", split="validation[:10%]")
+common_voice_validation_it= common_voice_validation_it.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
-""""load ITALIAN dataset"""
-common_voice_train_1 = load_dataset("common_voice", lang1 , split=f"train[:{train_pct1}%]")
-common_voice_train_1 = common_voice_train_1.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-common_voice_test_1 = load_dataset("common_voice", lang1, split="test[:8%]")
-common_voice_test_1 = common_voice_test_1.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-common_voice_validation_1= load_dataset("common_voice", lang1, split="validation[:8%]")
-common_voice_validation_1 = common_voice_validation_1.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-"""load  GALICIAN  dataset"""
-common_voice_train_2 = load_dataset("mozilla-foundation/common_voice_8_0", lang2 , split=f"train[:{train_pct2}%]", use_auth_token=True )
-common_voice_train_2 = common_voice_train_2.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-common_voice_test_2 = load_dataset("mozilla-foundation/common_voice_8_0", lang2 , split="test[:2%]")
-common_voice_test_2 = common_voice_test_2.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-common_voice_validation_2 = load_dataset("mozilla-foundation/common_voice_8_0", lang2 , split="validation[:2%]")
-common_voice_validation_2 = common_voice_validation_2.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
+"""load dataset galician"""
+common_voice_train_gl = load_dataset("mozilla-foundation/common_voice_8_0", "gl" , split=f"train[:{train_pct_gl}%]", use_auth_token=True )
+common_voice_train_gl= common_voice_train_gl.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_test_gl = load_dataset("mozilla-foundation/common_voice_8_0", "gl" , split="test[:10%]")
+common_voice_test_gl = common_voice_test_gl.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+common_voice_validation_gl = load_dataset("mozilla-foundation/common_voice_8_0", "gl", split="validation[:10%]")
+common_voice_validation_gl = common_voice_validation_gl.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 """length of each set"""
-len_train1 = len(common_voice_train_1)
-len_test1 = len(common_voice_test_1)
-len_validation1=len(common_voice_validation_1)
-print(f" FILE AUDIO PER SET 1   train: {len_train1},     test: {len_test1},     validation: {len_validation1}")
+len_train_it = len(common_voice_train_it)
+len_test_it = len(common_voice_test_it)
+len_validation_it = len(common_voice_validation_it)
+print(f" FILE AUDIO PER SET  ITALIAN  train: {len_train_it},     test: {len_test_it},     validation: {len_validation_it}")
 
-len_train2 = len(common_voice_train_2)
-len_test2 = len(common_voice_test_2)
-len_validation2 =len(common_voice_validation_2)
-print(f" FILE AUDIO PER SET 2   train: {len_train2},     test: {len_test2},     validation: {len_validation2}")
+len_train_gl = len(common_voice_train_gl)
+len_test_gl = len(common_voice_test_gl)
+len_validation_gl =len(common_voice_validation_gl)
+print(f" FILE AUDIO PER SET  GALICIAN  train: {len_train_gl},     test: {len_test_gl},     validation: {len_validation_gl}")
 
-"""join the two datasets"""
-common_voice_train = concatenate_datasets([common_voice_train_1, common_voice_train_2]).shuffle(seed=42)
+"""join the Datasets"""
+from datasets import concatenate_datasets
+common_voice_train = concatenate_datasets([common_voice_train_it, common_voice_train_gl]).shuffle(seed=42)
+common_voice_TEST = concatenate_datasets([common_voice_test_it, common_voice_test_gl]).shuffle(seed=42)
+common_voice_validation = concatenate_datasets([common_voice_validation_it, common_voice_validation_gl]).shuffle(seed=42)
 len_train= len(common_voice_train)
-
-common_voice_TEST= concatenate_datasets([common_voice_test_1, common_voice_test_2]).shuffle(seed=42)
 len_test= len(common_voice_TEST)
-
-common_voice_validation = concatenate_datasets([common_voice_validation_1, common_voice_validation_2]).shuffle(seed=42)
 len_validation= len(common_voice_validation)
 print(f" FILE AUDIO IN COMBINED SETS:  train: {len_train},     test: {len_test},     validation: {len_validation}")
 print(common_voice_train[0])
-
 
 """Preprocessing Dataset"""
 print("preprocess data")
 import re
 chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~\_\-\¿\¡\—]' 
-
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
     return batch
@@ -104,34 +62,29 @@ common_voice_validation = common_voice_validation.map(remove_special_characters)
 def replace_hatted_characters(batch):
     batch["sentence"] = re.sub('[’]', "'", batch["sentence"])
     return batch
-#common_voice_train = common_voice_train.map(replace_hatted_characters)
-#common_voice_test = common_voice_test.map(replace_hatted_characters)
-#common_voice_validation = common_voice_validation.map(replace_hatted_characters)
+common_voice_train = common_voice_train.map(replace_hatted_characters)
+common_voice_test = common_voice_test.map(replace_hatted_characters)
+common_voice_validation = common_voice_validation.map(replace_hatted_characters)
 
 def extract_all_chars(batch):
   all_text = " ".join(batch["sentence"])
   vocab = list(set(all_text))
   return {"vocab": [vocab], "all_text": [all_text]}
-
 vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_train.column_names)
 vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 vocab_validation = common_voice_validation.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_validation.column_names)
 
 #vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
-#vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
-#print(vocab_dict)
-
-vocab_list = ["'", " ", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","ll","á","ü","ç","ï","ù","à","è","ì","í","ò"]
+vocab_list = ["'", " ", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","á","ü","ç","ï","ù","à","è","ì","í","ò"]
+#vocab_list = ["'", " ", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","ll","á","ü","ç","ï","ù","à","è","ì","í","ò"]
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
-print(vocab_dict)                    
-    
+print(vocab_dict)
 vocab_dict["|"] = vocab_dict[" "]
 del vocab_dict[" "]
 vocab_dict["[UNK]"] = len(vocab_dict)
 vocab_dict["[PAD]"] = len(vocab_dict)
+print(vocab_dict) 
 print(len(vocab_dict))
-print(vocab_dict)
-
 
 import json
 with open('vocab.json', 'w') as vocab_file:
@@ -142,14 +95,12 @@ from transformers import Wav2Vec2CTCTokenizer
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
 print("saving tokenizer")
 tokenizer.save_pretrained(f"./tokenizer_{lang1}{lang2}")
-
 print(f"load tokenizer form local folder:  tokenizer_{lang1}{lang2}")
-tokenizer= Wav2Vec2CTCTokenizer.from_pretrained(f"./tokenizer_{lang1}{lang2}", local_files_only=True)
+tokenizer= Wav2Vec2CTCTokenizer.from_pretrained("./tokenizer_itgl", local_files_only=True)
 
 """Feature Extractor"""
 from transformers import Wav2Vec2FeatureExtractor
 feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000, padding_value=0.0, do_normalize=True, return_attention_mask=True)
-
 """Processor"""
 from transformers import Wav2Vec2Processor
 processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
@@ -183,7 +134,6 @@ max_input_length_in_sec = 5.0
 common_voice_train = common_voice_train.filter(lambda x: x < max_input_length_in_sec*processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_test = common_voice_test.filter(lambda x: x < max_input_length_in_sec*processor.feature_extractor.sampling_rate, input_columns=["input_length"])
 common_voice_validation = common_voice_validation.filter(lambda x: x < max_input_length_in_sec*processor.feature_extractor.sampling_rate, input_columns=["input_length"])
-
 common_voice_train[0]["input_length"]
 
 """see the length filtered"""
@@ -276,13 +226,10 @@ def compute_metrics(pred):
     return {"wer": wer, 
             "cer": cer,
             }
+from transformers import Trainer, EarlyStoppingCallback
+from transformers import Wav2Vec2ForCTC, TrainingArguments
 
-from transformers import Wav2Vec2ForCTC
-#"""load the pretrained checkpoint of Wav2Vec2-XLS-R-300M.
-#   Note: When using this notebook to train XLS-R on another language of Common Voice those hyper-parameter settings might not work very well. 
-#   Feel free to adapt those depending on your use case."""
 print('loading pretrained model')
-
 model = Wav2Vec2ForCTC.from_pretrained(
     "facebook/wav2vec2-xls-r-300m", 
     attention_dropout=0.0,
@@ -299,7 +246,6 @@ model = Wav2Vec2ForCTC.from_pretrained(
 model.freeze_feature_extractor()
 
 """Parameters for training"""
-from transformers import TrainingArguments
 training_args = TrainingArguments(
   output_dir= f"wav2vec2-large-xls-r-300m-multilingual-{train_pct1}-{train_pct2}",
   #output_dir= "wav2vec2-large-xls-r-300m-italian-50",
@@ -324,7 +270,6 @@ training_args = TrainingArguments(
 
 
 """Trainer"""
-from transformers import Trainer, EarlyStoppingCallback ##
 
 trainer = Trainer(
     model=model,
@@ -337,14 +282,10 @@ trainer = Trainer(
     callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
 )
 
-"""Training:
-if "out-of-memory" error: reduce per_device_train_batch_size to 8 or even less and increase gradient_accumulation."""
-
 print("TRAINING")
 trainer.train()
 #trainer.train(resume_from_checkpoint = True)
 print("ENDED TRAINING")
-
 print("model and tokenizer have been saved in the output_dir directory")
 
 
@@ -353,13 +294,11 @@ print("running evaluation")
 input_dict = processor(common_voice_test[0]["input_values"], return_tensors="pt", padding=True)
 logits = model(input_dict.input_values.to("cuda")).logits
 pred_ids = torch.argmax(logits, dim=-1)[0]
+
+common_voice_test_transcription=common_voice_TEST
 print("PRED_IDS", pred_ids)
 print("Prediction1:")
 print(processor.decode(pred_ids))
-
-print("loading test with no changes")
-common_voice_test_transcription=common_voice_TEST
-#common_voice_test_transcription = load_dataset("common_voice", lang  , split="test[:10%]")
 
 print("\nReference1:")
 print(common_voice_test_transcription[0]["sentence"].lower())
