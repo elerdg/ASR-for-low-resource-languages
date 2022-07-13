@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-"""tutorial.ipynb"""
 
 # Commented out IPython magic to ensure Python compatibility.
 # %%capture 
@@ -41,16 +40,16 @@ lang = arg.lang_code
 train_pct = arg.train_pct
 
 """load dataset"""
-common_voice_train = load_dataset("mozilla-foundation/common_voice_8_0", lang , split=f"train[:{train_pct}%]", use_auth_token=True )
-#common_voice_train = load_dataset("common_voice", lang , split=f"train[:{train_pct}%]")
+#common_voice_train = load_dataset("mozilla-foundation/common_voice_8_0", lang , split=f"train[:{train_pct}%]", use_auth_token=True )
+common_voice_train = load_dataset("common_voice", lang , split=f"train[:{train_pct}%]")
 common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
-common_voice_test = load_dataset("mozilla-foundation/common_voice_8_0", lang  , split="test[:10%]")
-#common_voice_test = load_dataset("common_voice", "it", split="test[:10%]")
+#common_voice_test = load_dataset("mozilla-foundation/common_voice_8_0", lang  , split="test[:10%]")
+common_voice_test = load_dataset("common_voice", "it", split="test[:10%]")
 common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
-common_voice_validation = load_dataset("mozilla-foundation/common_voice_8_0", lang , split="validation[:10%]")
-#common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
+#common_voice_validation = load_dataset("mozilla-foundation/common_voice_8_0", lang , split="validation[:10%]")
+common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
 common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 """take only path, audio, sentence """
@@ -74,18 +73,11 @@ common_voice_test = common_voice_test.map(remove_special_characters)
 common_voice_validation = common_voice_validation.map(remove_special_characters)
 
 def replace_hatted_characters(batch):
-    batch["sentence"] = re.sub('[à]', 'a', batch["sentence"])
-    batch["sentence"] = re.sub('[ì]', 'i', batch["sentence"])
-    batch["sentence"] = re.sub('[ò]', 'o', batch["sentence"])
-    batch["sentence"] = re.sub('[ù]', 'u', batch["sentence"])
-    batch["sentence"] = re.sub('[é]', 'e', batch["sentence"])
-    batch["sentence"] = re.sub('[ó]', 'o', batch["sentence"])
-    batch["sentence"] = re.sub('[ú]', 'u', batch["sentence"])
-    batch["sentence"] = re.sub('[í]', 'i', batch["sentence"])
+    batch["sentence"] = re.sub('[’]', "'", batch["sentence"])
     return batch
-#common_voice_train = common_voice_train.map(replace_hatted_characters)
-#common_voice_test = common_voice_test.map(replace_hatted_characters)
-#common_voice_validation = common_voice_validation.map(replace_hatted_characters)
+common_voice_train = common_voice_train.map(replace_hatted_characters)
+common_voice_test = common_voice_test.map(replace_hatted_characters)
+common_voice_validation = common_voice_validation.map(replace_hatted_characters)
 
 def extract_all_chars(batch):
   all_text = " ".join(batch["sentence"])
@@ -96,14 +88,9 @@ vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size
 vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 vocab_validation = common_voice_validation.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
 
-#vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
-#vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
-#print(vocab_dict)
-
-vocab_list = ["'", " ", "’", "a", "b","c","d","e","f","g","h","i","j","k","l","m","n","o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "é", "í","ú", "ñ","ó","ll","á","ü","ç","ï" ]
+vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
 vocab_dict = {v: k for k, v in enumerate(sorted(vocab_list))}
-print(vocab_dict)                    
-    
+print(vocab_dict)             
 vocab_dict["|"] = vocab_dict[" "]
 del vocab_dict[" "]
 vocab_dict["[UNK]"] = len(vocab_dict)
@@ -121,8 +108,8 @@ from transformers import Wav2Vec2CTCTokenizer
 #print("saving tokenizer")
 #tokenizer.save_pretrained(f"./wav2vec2-large-xls-r-300m-{lang}")
 
-print("load tokenizer form local folder:  tokenizer_ita. \ncontains 38 classes: 26 letters of the italian alphabet, 8 graphic accented vowels and 2 apostrophes + 3 special tokens PAD UNK and space ")
-tokenizer= Wav2Vec2CTCTokenizer.from_pretrained("./tokenizer_ita/", local_files_only=True)
+print("load tokenizer form local folder")
+tokenizer= Wav2Vec2CTCTokenizer.from_pretrained("./tokenizer_it/", local_files_only=True)
 
 """Feature Extractor"""
 from transformers import Wav2Vec2FeatureExtractor
@@ -141,11 +128,8 @@ common_voice_validation = common_voice_validation.cast_column("audio", Audio(sam
 print("prepare dataset")
 def prepare_dataset(batch):
     audio = batch["audio"]
-
-    # batched output is "un-batched"
     batch["input_values"] = processor(audio["array"], sampling_rate=audio["sampling_rate"]).input_values[0]
     batch["input_length"] = len(batch["input_values"])
-    
     with processor.as_target_processor():
         batch["labels"] = processor(batch["sentence"]).input_ids
     return batch
@@ -223,11 +207,8 @@ class DataCollatorCTCWithPadding:
 
         # replace padding with -100 to ignore loss correctly
         labels = labels_batch["input_ids"].masked_fill(labels_batch.attention_mask.ne(1), -100)
-
         batch["labels"] = labels
-
         return batch
-
 
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 
@@ -251,8 +232,7 @@ def compute_metrics(pred):
     print("cer:", cer)
 
     return {"wer": wer, 
-            "cer": cer,
-            }
+            "cer": cer,}
 
 from transformers import Wav2Vec2ForCTC
 #"""load the pretrained checkpoint of Wav2Vec2-XLS-R-300M.
@@ -270,7 +250,7 @@ model = Wav2Vec2ForCTC.from_pretrained(
     ctc_loss_reduction="mean", 
     pad_token_id=processor.tokenizer.pad_token_id,
     vocab_size=len(processor.tokenizer),
-)  ##
+) 
 
 """Freeze feauture extractor"""
 model.freeze_feature_extractor()
@@ -324,7 +304,6 @@ print("ENDED TRAINING")
 
 print("model and tokenizer have been saved in the output_dir directory")
 
-
 """Evaluation"""
 print("running evaluation")
 input_dict = processor(common_voice_test[0]["input_values"], return_tensors="pt", padding=True)
@@ -336,7 +315,7 @@ print("Prediction:")
 print(processor.decode(pred_ids))
 
 print("loading test with no changes")
-common_voice_test_transcription = load_dataset("mozilla-foundation/common_voice_8_0", lang , split="test[:10%]")
-#common_voice_test_transcription = load_dataset("common_voice", lang  , split="test[:10%]")
+#common_voice_test_transcription = load_dataset("mozilla-foundation/common_voice_8_0", lang , split="test[:10%]")
+common_voice_test_transcription = load_dataset("common_voice", lang  , split="test[:10%]")
 print("\nReference:")
 print(common_voice_test_transcription[0]["sentence"].lower())
