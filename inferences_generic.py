@@ -24,6 +24,8 @@ parser.add_argument('-tp', '--test_pct', type=int, help='pct train', default=20)
 parser.add_argument('-m', '--model_name', type=str, help='select the fine-tuned model', default='wav2vec2-large-xls-r-300m-it-100')
 parser.add_argument('-ck', '--checkpoint', type=int, help='select the last checkpoint', default=26685)
 parser.add_argument('-t', '--tokenizer_name', type=str, help='select tokenizer', default='it')
+parser.add_argument('-cs', '--corpus', type=int, help='version of common voice corpus', default=8)
+
 arg= parser.parse_args()
 
 lang = arg.lang_code
@@ -31,25 +33,23 @@ test_pct = arg.test_pct
 model_name = arg.model_name
 checkpoint = arg.checkpoint
 tokenizer_name = arg.tokenizer_name
-
+corpus = arg.corpus
 
 """import the model, processor, tokenizer"""
 print("loading saved model")
-saved_model = AutoModelForCTC.from_pretrained(f"/data/disk1/data/erodegher/wav2vec2-{model_name}/checkpoint-{checkpoint}/", local_files_only = True)
+saved_model = AutoModelForCTC.from_pretrained(f"/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-{model_name}/checkpoint-{checkpoint}/", local_files_only = True)
 saved_model.to("cuda")
 print("loading tokenizer")
 tokenizer = Wav2Vec2CTCTokenizer.from_pretrained(f"/data/disk1/data/erodegher/tokenizer_{tokenizer_name}/", local_files_only = True)
 print("loading processor")
-processor = Wav2Vec2Processor.from_pretrained(f"/data/disk1/data/erodegher/wav2vec2-{model_name}/checkpoint-{checkpoint}/", local_files_only=True)
+processor = Wav2Vec2Processor.from_pretrained(f"/data/disk1/data/erodegher/wav2vec2-large-xls-r-300m-{model_name}/checkpoint-{checkpoint}/", local_files_only=True)
 
 print("import test set")
-if lang == "gl":
-        print(" LOADING GALICIAN TEST SET")    
-        data_test= load_dataset("mozilla-foundation/common_voice_8_0", lang,  split=f"test[:{test_pct}%]" )
-        data_test = data_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-else:
-    print(" LOADING ITALIAN TEST SET")    
+if corpus == 6 :
     data_test= load_dataset("common_voice", lang, split=f"test[:{test_pct}%]")
+else:
+    data_test= load_dataset(f"mozilla-foundation/common_voice_{cs}_0", lang,  split=f"test[:{test_pct}%]" )
+    data_test = data_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 print("preprocess data") 
 chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~\_\-\¿\¡\—]' 
@@ -63,7 +63,7 @@ def replace_hatted_characters(batch):
     batch["sentence"] = re.sub('[’]', "'", batch["sentence"])
    # batch["sentence"] = re.sub('(ll)', "gl", batch["sentence"])
    # batch["sentence"] = re.sub('[ñ]', "gn", batch["sentence"])
-   # batch["sentence"] = re.sub('(nh)', "gn", batch["sentence"])
+   # batch["sentence"] = re.sub('[ç]', "s", batch["sentence"])
     return batch
 
 data_test= data_test.map(replace_hatted_characters)
@@ -105,7 +105,6 @@ for el in common_voice_test["input_values"]:
 
 list_sent=[]
 list_ref=[]
-
 for i, sentence_ in enumerate(predictions):
     #print(i, sentence_)
     print(i, "Sentence: ",  sentence_)
@@ -115,13 +114,13 @@ for i, sentence_ in enumerate(predictions):
 
 result_cer= cer.compute(predictions=[" ".join(list_sent)], references=[" ".join(list_ref)] )
 print("CER", result_cer)
-
 result_wer= wer.compute(predictions=[list_sent], references=[list_ref])
 print("WER: ", result_wer)
 
+print("creating a csv file with prediction and reference sentences")
 d={ "predictions":list_sent, "reference":list_ref }
 df = pd.DataFrame(d)
-df.to_csv(f"/data/disk1/data/erodegher/INFERENCE_{lang}-{model_name}.csv")
+df.to_csv(f"/data/disk1/data/erodegher/Inference_{lang}-{model_name}.csv")
         
 
 
