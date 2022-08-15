@@ -19,7 +19,7 @@ import torch
 import json
 from IPython.display import display, HTML
 from transformers import Wav2Vec2ForCTC
-from transformers import Wav2Vec2CTCTokenizer
+from transformers import Wav2Vec2CTCTokenizer 
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 from transformers import AutoModelForCTC, Wav2Vec2Processor
@@ -34,35 +34,46 @@ from torch import Tensor
 parser = argparse.ArgumentParser(description="Code to fine-tune pre-trained model wav2vec-xls-r with small amount of data")
 parser.add_argument('-l', '--lang_code', type=str, help='select language from Common Voice', default='it')
 parser.add_argument('-tp', '--train_pct', type=int, help='pct train set', default=10)
+parser.add_argument('-cs', '--corpus', type=int, help='version of common voice corpus', default=8)
+parser.add_argument('-t', '--tokenizer_name', type=str, help='select the tokenizer of the language', default='tokenizer_it')
+
 arg= parser.parse_args()
 
 lang = arg.lang_code
 train_pct = arg.train_pct
+corpus = arg.corpus
+tokenizer_name = arg.tokenizer_name
 
 """load dataset"""
-#common_voice_train = load_dataset("mozilla-foundation/common_voice_8_0", lang , split=f"train[:{train_pct}%]", use_auth_token=True )
-common_voice_train = load_dataset("common_voice", lang , split=f"train[:{train_pct}%]")
-common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-#common_voice_test = load_dataset("mozilla-foundation/common_voice_8_0", lang  , split="test[:10%]")
-common_voice_test = load_dataset("common_voice", "it", split="test[:10%]")
-common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
-
-#common_voice_validation = load_dataset("mozilla-foundation/common_voice_8_0", lang , split="validation[:10%]")
-common_voice_validation = load_dataset("common_voice", "it", split="validation[:10%]")
-common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+if corpus == 6 : 
+    common_voice_train = load_dataset("common_voice", lang , split=f"train[:{train_pct}%]")
+    common_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+    common_voice_test = load_dataset("common_voice", lang, split="test[:10%]")
+    common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+    common_voice_validation = load_dataset("common_voice", lang, split="validation[:10%]")
+    common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+else: 
+    common_voice_train = load_dataset(f"mozilla-foundation/common_voice_{cs}_0", lang , split=f"train[:{train_pct}%]", use_auth_token=True )
+    ommon_voice_train = common_voice_train.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+    common_voice_test = load_dataset(f"mozilla-foundation/common_voice_{cs}_0", lang  , split="test[:10%]")    
+    common_voice_test = common_voice_test.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
+    common_voice_validation = load_dataset(f"mozilla-foundation/common_voice_{cs}_0", lang , split="validation[:10%]")
+    common_voice_validation = common_voice_validation.remove_columns(["accent", "age", "client_id", "down_votes", "gender", "locale", "segment", "up_votes"])
 
 """take only path, audio, sentence """
 len_train = len(common_voice_train)
 len_test = len(common_voice_test)
 len_validation=len(common_voice_validation)
 
-print(f" FILE AUDIO PER SET   train: {len_train},     test: {len_test},     validation: {len_validation}")
+print(f"Audio Files per each set: train: {len_train},    test: {len_test},  validation: {len_validation}")
 
 """Preprocessing Dataset"""
 print("preprocess data")
 import re
-chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~\_\-\¿\¡\—]'
+if lang == "ar":
+    chars_to_remove_regex = '[\—\,\?\.\!\-\;\:\"\“\%\�\°\(\)\–\…\¿\¡\,\""\‘\”\჻\~\՞\؟\،\,\॥\«\»\„\,\“\”\「\」\‘\’\《\》\[\]\{\}\=\`\_\+\<\>\‹\›\©\®\→\。\、\﹂\﹁\～\﹏\，\【\】\‥\〽\『\』\〝\⟨\⟩\〜\♪\؛\/\\\−\^\'\ʻ\ˆ\´\ʾ\‧\〟\'ً \'ٌ\'ُ\'ِ\'ّ\'ْ]'
+else:
+    chars_to_remove_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�\°\(\)\–\…\\\[\]\«\»\\\/\^\<\>\~\_\-\¿\¡\—]'
 
 def remove_special_characters(batch):
     batch["sentence"] = re.sub(chars_to_remove_regex, '', batch["sentence"]).lower()
@@ -72,12 +83,12 @@ common_voice_train = common_voice_train.map(remove_special_characters)
 common_voice_test = common_voice_test.map(remove_special_characters)
 common_voice_validation = common_voice_validation.map(remove_special_characters)
 
-def replace_hatted_characters(batch):
+def replace_characters(batch):
     batch["sentence"] = re.sub('[’]', "'", batch["sentence"])
     return batch
-common_voice_train = common_voice_train.map(replace_hatted_characters)
-common_voice_test = common_voice_test.map(replace_hatted_characters)
-common_voice_validation = common_voice_validation.map(replace_hatted_characters)
+common_voice_train = common_voice_train.map(replace_characters)
+common_voice_test = common_voice_test.map(replace_characters)
+common_voice_validation = common_voice_validation.map(replace_characters)
 
 def extract_all_chars(batch):
   all_text = " ".join(batch["sentence"])
@@ -98,18 +109,16 @@ vocab_dict["[PAD]"] = len(vocab_dict)
 len(vocab_dict)
 
 import json
+"""uncomment this part if you want to create a tokenizer of the language from the characters in the transcriptions"""
+#print("Creating the tokenizer")
 #with open('vocab.json', 'w') as vocab_file:
     #json.dump(vocab_dict, vocab_file)
-
-#print("Creating the tokenizer")
-from transformers import Wav2Vec2CTCTokenizer
 #tokenizer = Wav2Vec2CTCTokenizer.from_pretrained("./", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
-
 #print("saving tokenizer")
 #tokenizer.save_pretrained(f"./wav2vec2-large-xls-r-300m-{lang}")
 
 print("load tokenizer form local folder")
-tokenizer= Wav2Vec2CTCTokenizer.from_pretrained("./tokenizer_it/", local_files_only=True)
+tokenizer= Wav2Vec2CTCTokenizer.from_pretrained(f"./{tokenizer_name}/", local_files_only=True)
 
 """Feature Extractor"""
 from transformers import Wav2Vec2FeatureExtractor
@@ -159,7 +168,7 @@ def Audio_len_filter(common_voice_set):
 len_tr_filter = Audio_len_filter(common_voice_train)
 len_ts_filter = Audio_len_filter(common_voice_test)
 len_val_filter=Audio_len_filter(common_voice_validation)
-print("filtered duration TRAIN in seconds ", len_tr_filter, " TEST in seconds", len_ts_filter , "VALIDATION in seconds", len_val_filter)
+print("filtered duration in seconds:  Train Set:", len_tr_filter, "Test Set:", len_ts_filter , "Validation Set:", len_val_filter)
 
 import torch
 from dataclasses import dataclass, field
@@ -219,9 +228,7 @@ cer_metric = load_metric("cer")
 def compute_metrics(pred):
     pred_logits = pred.predictions
     pred_ids = np.argmax(pred_logits, axis=-1)
-
     pred.label_ids[pred.label_ids == -100] = processor.tokenizer.pad_token_id
-
     pred_str = processor.batch_decode(pred_ids)
     # we do not want to group tokens when computing the metrics
     label_str = processor.batch_decode(pred.label_ids, group_tokens=False)
@@ -259,10 +266,9 @@ model.freeze_feature_extractor()
 from transformers import TrainingArguments
 training_args = TrainingArguments(
   output_dir= f"wav2vec2-large-xls-r-300m-{lang}-{train_pct}",
- #output_dir= "wav2vec2-large-xls-r-300m-italian-50",
   group_by_length=True,
   per_device_train_batch_size=4,  ##16
-  per_device_eval_batch_size=4,   ##
+  per_device_eval_batch_size=4,  
   gradient_accumulation_steps=2,
   evaluation_strategy="epoch",    ## changed from steps to epoch
   num_train_epochs=30,
@@ -274,14 +280,14 @@ training_args = TrainingArguments(
   learning_rate=3e-4,
   warmup_steps=500,
   save_total_limit=2,
-  save_strategy= "epoch",             ##
-  metric_for_best_model="eval_loss",  ##
-  load_best_model_at_end = True,      ##
-)
+  save_strategy= "epoch",            
+  metric_for_best_model="eval_loss", 
+  load_best_model_at_end = True,  
+  )
 
 
 """Trainer"""
-from transformers import Trainer, EarlyStoppingCallback ##
+from transformers import Trainer, EarlyStoppingCallback 
 
 trainer = Trainer(
     model=model,
@@ -289,7 +295,7 @@ trainer = Trainer(
     args=training_args,
     compute_metrics=compute_metrics,
     train_dataset=common_voice_train,
-    eval_dataset=common_voice_validation, ##
+    eval_dataset=common_voice_validation,
     tokenizer=processor.feature_extractor,
     callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
 )
@@ -299,7 +305,7 @@ if "out-of-memory" error: reduce per_device_train_batch_size to 8 or even less a
 
 print("TRAINING")
 trainer.train()
-#trainer.train(resume_from_checkpoint = True)
+#trainer.train(resume_from_checkpoint = True)   #uncomment to restart the traing from last checkpoint
 print("ENDED TRAINING")
 
 print("model and tokenizer have been saved in the output_dir directory")
@@ -313,9 +319,3 @@ print("PRED_IDS", pred_ids)
 
 print("Prediction:")
 print(processor.decode(pred_ids))
-
-print("loading test with no changes")
-#common_voice_test_transcription = load_dataset("mozilla-foundation/common_voice_8_0", lang , split="test[:10%]")
-common_voice_test_transcription = load_dataset("common_voice", lang  , split="test[:10%]")
-print("\nReference:")
-print(common_voice_test_transcription[0]["sentence"].lower())
