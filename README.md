@@ -10,7 +10,7 @@ The scripts in this repo allow to:
 * test the fine-tuned model incorporating an n-gram language model  
 
 The tokenizers contain the vocabularies for the langauges:
-* Italian 
-* Arabic 
-* Galician 
-* Romansh Vallader 
+* Italian (it)
+* Arabic  (ar)
+* Galician (gl)
+* Romansh Vallader (rm-vallader) 
