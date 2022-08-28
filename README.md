@@ -18,4 +18,4 @@ The tokenizers contain the vocabularies for the langauges:
 
 To fine-tune wav2vec2-xls-r we use the tokenizer of the language as decoder layer to train the model.
 
-![Fine-tuning wav2vec2-xls-r](C:\Users\eleon\OneDrive\Documenti\GitHub\github-ASR-ita-thesis\images\fine-tune-wav2vec2-xls-r.png)
+![Fine-tuning wav2vec2-xls-r](images/fine-tune-wav2vec2-xls-r.png)
