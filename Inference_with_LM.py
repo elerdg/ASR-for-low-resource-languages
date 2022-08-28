@@ -122,4 +122,4 @@ print("CER", result_cer)
 
 d={ "predictions":list_sent, "reference":list_ref }
 df = pd.DataFrame(d)
-df.to_csv("/data/disk1/data/erodegher/CSV_ITA_INFERENCES_WITH_LM.csv")
+df.to_csv("/data/disk1/data/erodegher/CSV_ITA_INFERENCE_WITH_LM.csv")
