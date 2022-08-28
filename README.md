@@ -8,3 +8,9 @@ The scripts in this repo allow to:
 * fine-tune wav2vec2-xls-r training jointly two different languages
 * test the fine-tuned model 
 * test the fine-tuned model incorporating an n-gram language model  
+
+The tokenizers contain the vocabularies for the langauges:
+* Italian 
+* Arabic 
+* Galician 
+* Romansh Vallader 
