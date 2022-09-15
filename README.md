@@ -19,3 +19,9 @@ The tokenizers contain the vocabularies for the langauges:
 To fine-tune wav2vec2-xls-r we use the tokenizer of the language as decoder layer to train the model.
 
 ![Fine-tuning wav2vec2-xls-r](images/fine-tune-wav2vec2-xls-r.png)
+
+
+- To *fine-tune* the pre-trained model wav2vec2-xls-r on the target language see the Notebook "Notebook_fine_tuning_wav2vec2_xls_r"
+- To create a *bilingual model* by fine-tuning the pre-trained model refer to the the Notebook "Notebook_bilingual_fine_tuning"
+- To compute *inferences on the fine-tuned model* use the Notebook "Notebook_inference.ipynb"
+- in the second part of the notebook is explained how to compute the inferences using a *Language Model*
